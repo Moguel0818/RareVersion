@@ -1,0 +1,407 @@
+/* AllMovieRelease — painel de moderação (fila de aprovação, radar, catálogo, exportação) */
+(function () {
+  'use strict';
+  const A = window.AMR;
+  const esc = A.esc;
+  const t = A.t;
+  const L = A.L;
+  const V = A.views;
+  const KEY = 'amr.admin.key';
+
+  const S = (A.adminState = { key: A.session.get(KEY, ''), tab: 'queue', data: null, loading: false, error: '', tmdbResults: null, tmdbError: '' });
+
+  const fmtDateTime = (iso) => {
+    if (!iso) return '';
+    try { return new Intl.DateTimeFormat(A.locale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)); } catch (e) { return String(iso).slice(0, 16).replace('T', ' '); }
+  };
+
+  async function load() {
+    S.loading = true;
+    S.error = '';
+    try {
+      S.data = await A.backend.adminList(S.key);
+    } catch (e) {
+      const msg = String((e && e.message) || e);
+      if (msg.indexOf('nao_autorizado') >= 0) { S.key = ''; A.session.del(KEY); S.error = ''; A.toast(t('ad_key_err'), 'error'); }
+      else S.error = msg;
+    }
+    S.loading = false;
+    A.rerender();
+  }
+
+  async function reloadAll() {
+    S.data = await A.backend.adminList(S.key);
+    try { A.approved = await A.backend.approved(); } catch (e) { /* mantém o que já tinha */ }
+    A.rebuild();
+    A.rerender();
+  }
+
+  /* ---------------- tela ---------------- */
+  V.admin = function () {
+    const live = A.backend.mode() === 'live';
+    const head = '<header class="page-head"><h1>' + esc(t('ad_title')) + '</h1>' +
+      '<p class="mode ' + (live ? 'live' : 'demo') + '"><span class="dot" aria-hidden="true"></span>' + esc(live ? t('ad_mode_live') : t('ad_mode_demo')) + '</p>' +
+      (live ? '' : '<p class="lead">' + esc(t('ad_mode_demo_lead')) + '</p>') + '</header>';
+    if (live && !S.key) {
+      return '<section class="page admin">' + head +
+        '<form class="login" data-form="admin-login"><label for="ad-key">' + esc(t('ad_key')) + '</label>' +
+        '<input id="ad-key" name="key" type="password" autocomplete="current-password" required>' +
+        '<button class="btn primary" type="submit">' + esc(t('ad_login')) + '</button></form></section>';
+    }
+    if (!S.data && !S.loading && !S.error) setTimeout(load, 0);
+    const pending = S.data ? S.data.pending.length : 0;
+    const versions = A.allVersions().length;
+    const tabs = [['queue', 'ad_tab_queue', pending], ['history', 'ad_tab_history'], ['radar', 'ad_tab_radar'], ['catalog', 'ad_tab_catalog'], ['export', 'ad_tab_export'], ['config', 'ad_tab_config']];
+    const tabBar = '<div class="ad-tabs" role="tablist">' + tabs.map((tb) =>
+      '<button type="button" role="tab" class="ad-tab' + (S.tab === tb[0] ? ' on' : '') + '" aria-selected="' + (S.tab === tb[0]) + '" data-action="adm-tab" data-tab="' + tb[0] + '">' +
+        esc(t(tb[1])) + (tb[2] ? ' <span class="count">' + tb[2] + '</span>' : '') + '</button>').join('') + '</div>';
+    const body = { queue: queueTab, history: historyTab, radar: radarTab, catalog: catalogTab, export: exportTab, config: configTab }[S.tab] || queueTab;
+    return '<section class="page admin">' + head +
+      '<p class="ad-stats">' + esc(t('ad_stats', { f: A.films.length, v: versions, p: pending })) +
+        (live ? ' <button type="button" class="link-btn" data-action="adm-logout">' + esc(t('ad_logout')) + '</button>' : '') + '</p>' +
+      tabBar + '<div class="ad-body" role="tabpanel">' + body() + '</div></section>';
+  };
+
+  function loadingOrError() {
+    if (S.error) return '<p class="error">' + esc(t('ad_err_load', { e: S.error })) + '</p>';
+    if (!S.data) return '<p class="muted">' + esc(t('loading')) + '</p>';
+    return '';
+  }
+
+  function kindLabel(tipo) { return t('ad_kind_' + tipo); }
+
+  function preview(it) {
+    const d = it.dados || {};
+    const parts = [];
+    if (d.film) parts.push('<p><strong>' + esc(L(d.film.title) || d.film.original_title || '') + '</strong> ' + (d.film.year ? '(' + esc(d.film.year) + ')' : '') + (d.film.tmdb ? ' <span class="muted">TMDB ' + esc(d.film.tmdb) + '</span>' : '') + '</p>');
+    if (d.version) {
+      parts.push('<p class="badges">' + V.typeBadge(d.version.type || 'official') + '<strong>' + esc(L(d.version.name)) + '</strong>' +
+        (d.version.released ? '<span class="chip">' + esc(A.fmtDate(d.version.released)) + '</span>' : '') +
+        (d.version.by ? '<span class="chip">' + esc(L(d.version.by)) + '</span>' : '') + '</p>' +
+        (d.version.summary ? '<p>' + esc(L(d.version.summary)) + '</p>' : ''));
+    }
+    if (d.texto) parts.push('<p>' + esc(L(d.texto)) + '</p>');
+    if (it.tipo === 'radar' && d.feed) parts.push('<p class="muted">' + esc(d.feed) + (d.pubDate ? ' (' + esc(String(d.pubDate).slice(0, 16)) + ')' : '') + '</p>');
+    return parts.length ? '<div class="qprev">' + parts.join('') + '</div>' : '';
+  }
+
+  function qItem(it) {
+    const id = esc(it.id);
+    const src = A.safeUrl(it.fonte_url);
+    return '<article class="qitem">' +
+      '<header class="qhead"><span class="chip kind">' + esc(kindLabel(it.tipo)) + '</span>' + (it.demo ? '<span class="chip">' + esc(t('ad_example')) + '</span>' : '') +
+        '<h3>' + esc(it.titulo || '') + '</h3><time datetime="' + esc(it.criado_em || '') + '">' + esc(fmtDateTime(it.criado_em)) + '</time></header>' +
+      '<p class="qmeta"><span>' + esc(t('ad_from')) + ': ' + esc(it.origem || '') + '</span>' +
+        (it.contato ? '<span>' + esc(t('ad_contact')) + ': ' + esc(it.contato) + '</span>' : '') +
+        '<span>' + esc(t('ad_source')) + ': ' + (src ? '<a href="' + esc(src) + '" target="_blank" rel="noopener noreferrer">' + esc(A.host(src)) + '</a>' : '<em>' + esc(t('ad_no_source')) + '</em>') + '</span></p>' +
+      preview(it) +
+      '<details class="qedit"><summary>' + esc(t('ad_edit')) + '</summary>' +
+        '<textarea id="qjson-' + id + '" rows="12" spellcheck="false" aria-label="JSON">' + esc(JSON.stringify(it.dados || {}, null, 2)) + '</textarea>' +
+        '<p class="muted small">IDs: ' + A.films.map((f) => esc(f.id)).join(', ') + '</p>' +
+        (it.tipo === 'radar' ? '<button type="button" class="btn small ghost" data-action="adm-template" data-id="' + id + '">' + esc(t('ad_template')) + '</button>' : '') +
+      '</details>' +
+      '<label class="qnote"><span>' + esc(t('ad_note')) + '</span><input type="text" id="qnote-' + id + '" maxlength="300"></label>' +
+      '<div class="qactions">' +
+        '<button type="button" class="btn primary small" data-action="adm-decide" data-decision="approve" data-id="' + id + '">' + esc(t('ad_approve')) + '</button>' +
+        '<button type="button" class="btn ghost small" data-action="adm-decide" data-decision="reject" data-id="' + id + '">' + esc(t('ad_reject')) + '</button>' +
+      '</div></article>';
+  }
+
+  function queueTab() {
+    const le = loadingOrError();
+    if (le) return le;
+    if (!S.data.pending.length) return '<p class="muted">' + esc(t('ad_empty')) + '</p>';
+    return '<div class="qlist">' + S.data.pending.map(qItem).join('') + '</div>';
+  }
+
+  function historyTab() {
+    const le = loadingOrError();
+    if (le) return le;
+    const h = S.data.history || [];
+    if (!h.length) return '<p class="muted">' + esc(t('ad_history_empty')) + '</p>';
+    return '<ul class="hist">' + h.map((it) =>
+      '<li><span class="chip ' + (it.status === 'approved' ? 'ok' : 'no') + '">' + esc(it.status === 'approved' ? t('ad_approved') : t('ad_rejected')) + '</span>' +
+      '<span class="chip kind">' + esc(kindLabel(it.tipo)) + '</span><strong>' + esc(it.titulo || '') + '</strong>' +
+      '<time>' + esc(fmtDateTime(it.revisado_em)) + '</time>' + (it.nota_admin ? '<em>' + esc(it.nota_admin) + '</em>' : '') + '</li>').join('') + '</ul>';
+  }
+
+  function radarTab() {
+    const live = A.backend.mode() === 'live';
+    const feeds = (S.data && S.data.feeds) || [];
+    return '<div class="prose"><p>' + esc(t('ad_radar_lead')) + '</p>' +
+      (live
+        ? '<p><button type="button" class="btn primary" data-action="adm-radar">' + esc(t('ad_radar_run')) + '</button></p>' +
+          (S.data && S.data.radar_last ? '<p class="muted">' + esc(fmtDateTime(S.data.radar_last)) + '</p>' : '')
+        : '<p class="muted">' + esc(t('ad_radar_demo')) + '</p>') +
+      (feeds.length ? '<h3>' + esc(t('ad_radar_feeds')) + '</h3><ul class="feeds">' + feeds.map((f) => '<li><code>' + esc(f.url) + '</code>' + (f.kw ? ' <span class="muted">' + esc(f.kw) + '</span>' : '') + '</li>').join('') + '</ul>' : '') +
+      '<p class="muted">' + esc(t('ad_radar_hint')) + '</p></div>';
+  }
+
+  function catalogTab() {
+    const rows = A.films.slice().sort((a, b) => a.year - b.year).map((f) => {
+      const fan = f.versions.filter((v) => String(v.type).indexOf('fan_') === 0).length;
+      return '<tr><td><a href="#' + esc(f.id) + '">' + esc(A.filmTitle(f)) + '</a>' + (f.community ? ' <span class="chip community">' + esc(t('fp_community')) + '</span>' : '') + '</td>' +
+        '<td>' + esc(f.year || '') + '</td><td>' + f.versions.length + '</td><td>' + fan + '</td><td>' + f.dubs.length + '</td><td><code>' + esc(f.id) + '</code></td></tr>';
+    }).join('');
+    const tmdbOn = A.tmdb.mode() !== 'off';
+    let results = '';
+    if (S.tmdbError) results = '<p class="error">' + esc(S.tmdbError) + '</p>';
+    else if (S.tmdbResults) {
+      results = '<ul class="tmdb-pick">' + S.tmdbResults.slice(0, 8).map((r) =>
+        '<li>' + (r.poster_path ? '<img src="' + esc(A.tmdb.img(r.poster_path, 'w92')) + '" alt="" width="34" height="51" loading="lazy">' : '<span class="sr-noimg" aria-hidden="true"></span>') +
+        '<span>' + esc(r.title || r.original_title) + ' <small>' + esc((r.release_date || '').slice(0, 4)) + '</small></span>' +
+        '<button type="button" class="btn small" data-action="adm-add-tmdb" data-tmdb="' + esc(r.id) + '">' + esc(t('ad_add')) + '</button></li>').join('') + '</ul>';
+    }
+    return '<p class="muted">' + esc(t('ad_cat_lead')) + '</p>' +
+      '<div class="table-wrap"><table class="eds"><thead><tr><th scope="col">' + esc(t('sg_film')) + '</th><th scope="col">' + esc(t('sg_year')) + '</th><th scope="col">' + esc(t('fp_versions')) + '</th><th scope="col">' + esc(t('nw_fan')) + '</th><th scope="col">' + esc(t('fp_dubs')) + '</th><th scope="col">ID</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<h3>' + esc(t('ad_cat_add')) + '</h3>' +
+      (tmdbOn
+        ? '<form class="inline-form" data-form="adm-tmdb-search"><label class="sr-only" for="ad-tmdb-q">' + esc(t('ad_cat_add_ph')) + '</label><input id="ad-tmdb-q" name="q" type="search" placeholder="' + esc(t('ad_cat_add_ph')) + '" required><button class="btn" type="submit">' + esc(t('ad_cat_search')) + '</button></form>' + results
+        : '<p class="muted">' + esc(t('s_tmdb_off')) + '</p>') +
+      '<h3>' + esc(t('ad_cat_manual')) + '</h3>' +
+      '<form class="grid-form" data-form="adm-manual">' +
+        '<label><span>' + esc(t('ad_cat_title_pt')) + ' *</span><input name="pt" required maxlength="160"></label>' +
+        '<label><span>' + esc(t('ad_cat_title_en')) + '</span><input name="en" maxlength="160"></label>' +
+        '<label><span>' + esc(t('sg_year')) + ' *</span><input name="year" inputmode="numeric" pattern="[0-9]{4}" required maxlength="4"></label>' +
+        '<label><span>' + esc(t('ad_cat_tmdb_id')) + '</span><input name="tmdb" inputmode="numeric" pattern="[0-9]*" maxlength="9"></label>' +
+        '<button class="btn" type="submit">' + esc(t('ad_add')) + '</button></form>';
+  }
+
+  function buildExport() {
+    const clean = (f) => {
+      const o = A.clone(f);
+      delete o.tmdbx;
+      delete o.community;
+      (o.versions || []).forEach((v) => { delete v.community; });
+      if (!o.notes || !o.notes.length) delete o.notes;
+      return o;
+    };
+    const out = { schema: 1, updated: new Date().toISOString().slice(0, 10), films: A.films.map(clean), sources: A.sources };
+    return '/*\n * AllMovieRelease — catálogo exportado pela Moderação em ' + new Date().toISOString() + '\n * Formato dos campos: veja o README.\n */\nwindow.AMR_CATALOG = ' + JSON.stringify(out, null, 2) + ';\n';
+  }
+
+  function exportTab() {
+    return '<p>' + esc(t('ad_export_lead')) + '</p>' +
+      '<p class="actions"><button type="button" class="btn primary" data-action="adm-copy">' + esc(t('ad_export_copy')) + '</button>' +
+      (A.isTopWindow ? '<button type="button" class="btn ghost" data-action="adm-download">' + esc(t('ad_export_dl')) + '</button>' : '') + '</p>' +
+      '<label class="sr-only" for="ad-export">catalogo.js</label><textarea id="ad-export" class="export" rows="16" readonly spellcheck="false">' + esc(buildExport()) + '</textarea>';
+  }
+
+  function configTab() {
+    const cfg = A.storage.get('amr.cfg', {}) || {};
+    return '<form class="grid-form one" data-form="adm-config">' +
+      '<label><span>' + esc(t('ad_cfg_backend')) + '</span><input name="url" type="url" placeholder="https://script.google.com/macros/s/…/exec" value="' + esc(cfg.APPS_SCRIPT_URL || '') + '"><small>' + esc(t('ad_cfg_backend_hint')) + '</small></label>' +
+      '<label><span>' + esc(t('ad_cfg_tmdb')) + '</span><input name="tmdb" type="password" autocomplete="off" value="' + esc(A.storage.get('amr.admin.tmdbKey', '')) + '"><small>' + esc(t('ad_cfg_tmdb_hint')) + '</small></label>' +
+      '<button class="btn primary" type="submit">' + esc(t('ad_cfg_save')) + '</button></form>' +
+      (A.backend.mode() === 'demo' ? '<p><button type="button" class="btn ghost" data-action="adm-reset">' + esc(t('ad_cfg_reset')) + '</button></p>' : '');
+  }
+
+  /* ---------------- ações ---------------- */
+  async function decide(id, decision) {
+    const it = S.data && S.data.pending.find((i) => i.id === id);
+    if (!it) return;
+    let dados = it.dados || null;
+    const ta = document.getElementById('qjson-' + id);
+    if (ta) {
+      try { dados = JSON.parse(ta.value); } catch (e) { A.toast(t('ad_json_err', { e: e.message }), 'error'); return; }
+    }
+    const needsVersion = ['version', 'version_new_film', 'radar'].indexOf(it.tipo) >= 0;
+    if (decision === 'approve' && needsVersion && !(dados && (dados.version || dados.texto || dados.note))) {
+      A.toast(t('ad_need_version'), 'error');
+      return;
+    }
+    const noteEl = document.getElementById('qnote-' + id);
+    try {
+      A.toast(t('ad_working'));
+      await A.backend.adminDecide(S.key, id, decision, dados, noteEl ? noteEl.value : '');
+      A.toast(decision === 'approve' ? t('ad_approved') : t('ad_rejected'));
+      await reloadAll();
+    } catch (e) {
+      A.toast(String((e && e.message) || e), 'error');
+    }
+  }
+
+  function template(id) {
+    const it = S.data && S.data.pending.find((i) => i.id === id);
+    const ta = document.getElementById('qjson-' + id);
+    if (!it || !ta) return;
+    let cur = {};
+    try { cur = JSON.parse(ta.value) || {}; } catch (e) { /* começa do zero */ }
+    const title = it.titulo || cur.title || '';
+    const tpl = {
+      film_id: it.film_id || cur.film_id || '',
+      version: cur.version || {
+        id: A.slug(title).slice(0, 40) || A.uid('v'),
+        type: 'fan_scan',
+        name: { pt: title, en: title },
+        by: '',
+        released: String(cur.pubDate || '').slice(0, 7),
+        cut: 'theatrical',
+        source: { pt: '', en: '' },
+        res: '',
+        formats: ['file'],
+        summary: { pt: '', en: '' },
+        reception: { level: 'sem_dados' },
+        availability: 'unofficial',
+        src_urls: [it.fonte_url || cur.link].filter(Boolean)
+      }
+    };
+    if (cur.film) tpl.film = cur.film;
+    ta.value = JSON.stringify(tpl, null, 2);
+    const det = ta.closest('details');
+    if (det) det.open = true;
+    ta.focus();
+  }
+
+  async function addFromTmdb(tmdbId) {
+    const id = Number(tmdbId);
+    if (A.films.some((f) => Number(f.tmdb) === id)) { A.toast(t('ad_cat_exists'), 'error'); return; }
+    try {
+      A.toast(t('ad_working'));
+      const res = await Promise.all([A.tmdb.movie(id, 'pt-BR'), A.tmdb.movie(id, 'en-US')]);
+      const pt = res[0];
+      const en = res[1];
+      const year = parseInt(String(en.release_date || pt.release_date || '').slice(0, 4), 10) || null;
+      const slug = A.slug((en.original_title || en.title || pt.title) + '-' + (year || ''));
+      if (A.film(slug)) { A.toast(t('ad_cat_exists'), 'error'); return; }
+      const film = {
+        id: slug, tmdb: id, year: year,
+        original_title: en.original_title || en.title,
+        title: { pt: pt.title || en.title, en: en.title || pt.title },
+        overview: { pt: pt.overview || '', en: en.overview || '' },
+        runtime: en.runtime || pt.runtime || null,
+        accent: '#c9a24a', accent2: '#3b5d8f',
+        versions: []
+      };
+      await A.backend.adminAdd(S.key, { tipo: 'film', film_id: slug, dados: { film } });
+      A.storage.set('amr.tmdb.' + id, { t: Date.now(), d: A.tmdbToFilmData(pt, en) });
+      S.tmdbResults = null;
+      A.toast(t('ad_cat_added'));
+      await reloadAll();
+    } catch (e) {
+      A.toast(String((e && e.message) || e), 'error');
+    }
+  }
+
+  async function copyExport() {
+    const ta = document.getElementById('ad-export');
+    if (!ta) return;
+    try {
+      await navigator.clipboard.writeText(ta.value);
+      A.toast(t('ad_copied'));
+    } catch (e) {
+      ta.focus();
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+      A.toast(ok ? t('ad_copied') : t('ad_copy_fail'), ok ? '' : 'error');
+    }
+  }
+
+  function downloadExport() {
+    const blob = new Blob([buildExport()], { type: 'text/javascript;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'catalogo.js';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  A.adminAction = async function (action, el) {
+    switch (action) {
+      case 'adm-tab':
+        S.tab = el.dataset.tab;
+        A.rerender();
+        break;
+      case 'adm-decide':
+        await decide(el.dataset.id, el.dataset.decision);
+        break;
+      case 'adm-template':
+        template(el.dataset.id);
+        break;
+      case 'adm-radar':
+        try {
+          A.toast(t('ad_working'));
+          const r = await A.backend.radarRun(S.key);
+          A.toast(t('ad_radar_done', { n: r.novos || 0 }));
+          await reloadAll();
+        } catch (e) { A.toast(String((e && e.message) || e), 'error'); }
+        break;
+      case 'adm-add-tmdb':
+        await addFromTmdb(el.dataset.tmdb);
+        break;
+      case 'adm-copy':
+        await copyExport();
+        break;
+      case 'adm-download':
+        downloadExport();
+        break;
+      case 'adm-reset':
+        A.backend.demoReset();
+        S.data = null;
+        A.approved = [];
+        A.rebuild();
+        A.toast(t('ad_cfg_reset_done'));
+        A.rerender();
+        break;
+      case 'adm-logout':
+        S.key = '';
+        S.data = null;
+        A.session.del(KEY);
+        A.rerender();
+        break;
+      default:
+        break;
+    }
+  };
+
+  A.adminSubmit = async function (formName, form) {
+    const fd = new FormData(form);
+    if (formName === 'admin-login') {
+      const key = String(fd.get('key') || '').trim();
+      try {
+        await A.backend.adminCheck(key);
+        S.key = key;
+        A.session.set(KEY, key);
+        S.data = null;
+        A.rerender();
+      } catch (e) {
+        A.toast(t('ad_key_err'), 'error');
+      }
+    } else if (formName === 'adm-tmdb-search') {
+      const q = String(fd.get('q') || '').trim();
+      if (!q) return;
+      S.tmdbError = '';
+      try {
+        const r = await A.tmdb.search(q, A.lang === 'pt' ? 'pt-BR' : 'en-US');
+        S.tmdbResults = r.results || [];
+      } catch (e) {
+        S.tmdbResults = null;
+        S.tmdbError = t('s_tmdb_fail');
+      }
+      A.rerender();
+    } else if (formName === 'adm-manual') {
+      const pt = String(fd.get('pt') || '').trim();
+      const en = String(fd.get('en') || '').trim() || pt;
+      const year = parseInt(String(fd.get('year') || ''), 10) || null;
+      const tmdb = parseInt(String(fd.get('tmdb') || ''), 10) || null;
+      const id = A.slug((en || pt) + '-' + (year || ''));
+      if (A.film(id)) { A.toast(t('ad_cat_exists'), 'error'); return; }
+      try {
+        await A.backend.adminAdd(S.key, { tipo: 'film', film_id: id, dados: { film: { id, tmdb, year, original_title: en, title: { pt, en }, versions: [] } } });
+        A.toast(t('ad_cat_added'));
+        await reloadAll();
+      } catch (e) { A.toast(String((e && e.message) || e), 'error'); }
+    } else if (formName === 'adm-config') {
+      const cfg = A.storage.get('amr.cfg', {}) || {};
+      const url = String(fd.get('url') || '').trim();
+      if (url) cfg.APPS_SCRIPT_URL = url; else delete cfg.APPS_SCRIPT_URL;
+      A.storage.set('amr.cfg', cfg);
+      const key = String(fd.get('tmdb') || '').trim();
+      if (key) A.storage.set('amr.admin.tmdbKey', key); else A.storage.del('amr.admin.tmdbKey');
+      A.toast(t('ad_cfg_saved'));
+      setTimeout(() => window.location.reload(), 600);
+    }
+  };
+})();

@@ -1,0 +1,8 @@
+Pasta de imagens do site.
+
+tmdb-logo.svg (obrigatório antes de publicar)
+  Os termos do TMDB pedem o logo oficial na página "Sobre".
+  Baixe uma das versões aprovadas em:
+  https://www.themoviedb.org/about/logos-attribution
+  Salve aqui com o nome tmdb-logo.svg. Enquanto o arquivo não existir,
+  o site esconde a imagem e mostra só o aviso em texto.

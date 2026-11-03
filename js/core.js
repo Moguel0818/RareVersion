@@ -112,9 +112,13 @@
     f.dubs = Array.isArray(f.dubs) ? f.dubs : [];
     f.guide = Array.isArray(f.guide) ? f.guide : [];
     f.notes = Array.isArray(f.notes) ? f.notes : [];
+    f.releases = Array.isArray(f.releases) ? f.releases : [];
+    f.links = f.links && typeof f.links === 'object' ? f.links : {};
     f.versions.forEach((v) => {
       v.type = ['official', 'theatrical', 'fan_scan', 'fan_restoration', 'fan_edit'].indexOf(v.type) >= 0 ? v.type : 'official';
       v.cut = v.cut || 'theatrical';
+      v.scores = v.scores && typeof v.scores === 'object' ? v.scores : {};
+      v.reviews = Array.isArray(v.reviews) ? v.reviews : [];
     });
     return f;
   }
@@ -179,35 +183,134 @@
 
   /* ---------------- TMDB ---------------- */
   const TMDB_IMG = 'https://image.tmdb.org/t/p/';
+  const KEY_STORE = 'amr.tmdb.key';
   AMR.tmdb = {
-    key() { return AMR.cfg('TMDB_API_KEY') || AMR.storage.get('amr.admin.tmdbKey', ''); },
+    // Chave colada pelo visitante nas Configurações (fica só neste aparelho)
+    userKey() { return String(AMR.storage.get(KEY_STORE, '') || AMR.storage.get('amr.admin.tmdbKey', '') || '').trim(); },
+    setUserKey(k) {
+      AMR.storage.del('amr.admin.tmdbKey');
+      if (k) AMR.storage.set(KEY_STORE, String(k).trim()); else AMR.storage.del(KEY_STORE);
+    },
+    key() { return this.userKey() || AMR.cfg('TMDB_API_KEY'); },
+    // A chave do visitante tem prioridade; sem ela, o servidor (Apps Script); sem os dois, desligado
     mode() {
+      if (this.userKey()) return 'direct';
       if (AMR.cfg('APPS_SCRIPT_URL')) return 'proxy';
-      if (this.key()) return 'direct';
+      if (AMR.cfg('TMDB_API_KEY')) return 'direct';
       return 'off';
+    },
+    looksLikeKey(k) { k = String(k || '').trim(); return /^[a-f0-9]{32}$/i.test(k) || /^eyJ[\w-]+\.[\w-]+\.[\w-]+$/.test(k); },
+    directUrl(path, params, key) {
+      const url = new URL('https://api.themoviedb.org/3/' + path);
+      Object.keys(params || {}).forEach((p) => { if (params[p] !== '' && params[p] != null) url.searchParams.set(p, params[p]); });
+      const headers = { accept: 'application/json' };
+      if (key.length > 40) headers.Authorization = 'Bearer ' + key; else url.searchParams.set('api_key', key);
+      return { url: url.toString(), headers };
+    },
+    async direct(path, params, key) {
+      const req = this.directUrl(path, params, key || this.key());
+      const r = await fetchWithTimeout(req.url, { headers: req.headers }, 9000);
+      if (!r.ok) throw new Error('tmdb_' + r.status);
+      return r.json();
+    },
+    // Testa uma chave sem salvar: 'ok', 'bad' (recusada) ou 'net' (sem conexão)
+    async test(key) {
+      try { await this.direct('configuration', {}, String(key || '').trim()); return 'ok'; }
+      catch (e) { return /tmdb_(401|403)/.test(String(e && e.message)) ? 'bad' : 'net'; }
     },
     async request(kind, params) {
       const mode = this.mode();
       if (mode === 'off') throw new Error('tmdb_off');
       if (mode === 'proxy') {
         if (kind === 'search') return AMR.backend.get('tmdb_search', { q: params.query, lang: params.language });
+        if (kind === 'images') return AMR.backend.get('tmdb_images', { id: params.id });
         return AMR.backend.get('tmdb_movie', { id: params.id, lang: params.language });
       }
-      const key = this.key();
-      const path = kind === 'search' ? 'search/movie' : 'movie/' + encodeURIComponent(params.id);
-      const url = new URL('https://api.themoviedb.org/3/' + path);
-      url.searchParams.set('language', params.language || 'pt-BR');
-      if (kind === 'search') { url.searchParams.set('query', params.query); url.searchParams.set('include_adult', 'false'); }
-      const headers = { accept: 'application/json' };
-      if (key.length > 40) headers.Authorization = 'Bearer ' + key; else url.searchParams.set('api_key', key);
-      const r = await fetchWithTimeout(url.toString(), { headers }, 9000);
-      if (!r.ok) throw new Error('tmdb_' + r.status);
-      return r.json();
+      if (kind === 'search') return this.direct('search/movie', { query: params.query, language: params.language || 'pt-BR', include_adult: 'false' });
+      if (kind === 'images') return AMR.trimImages(await this.direct('movie/' + encodeURIComponent(params.id) + '/images', {}));
+      return this.direct('movie/' + encodeURIComponent(params.id), { language: params.language || 'pt-BR' });
     },
     movie(id, lang) { return this.request('movie', { id, language: lang }); },
     search(q, lang) { return this.request('search', { query: q, language: lang }); },
+    images(id) { return this.request('images', { id }); },
     img(path, size) { return path ? TMDB_IMG + (size || 'w500') + path : ''; }
   };
+
+  // Lista de imagens enxuta: [caminho, idioma, largura, altura, nota] (o mesmo formato do Apps Script)
+  AMR.trimImages = (r) => {
+    const m = (a, n) => (Array.isArray(a) ? a : []).slice(0, n).map((i) => (Array.isArray(i) ? i
+      : [i.file_path, i.iso_639_1 || '', i.width || 0, i.height || 0, Math.round((i.vote_average || 0) * 10) / 10]))
+      .filter((i) => typeof i[0] === 'string' && /^\/[\w.-]+$/.test(i[0]));
+    return { posters: m(r && r.posters, 300), backdrops: m(r && r.backdrops, 150), logos: m(r && r.logos, 80) };
+  };
+
+  // Galeria: busca uma vez por filme e guarda por 7 dias
+  const galleryMem = {};
+  AMR.gallery = {
+    get(id) {
+      if (galleryMem[id]) return galleryMem[id];
+      const c = AMR.storage.get('amr.tmdbimg.' + id, null);
+      if (c && c.d && Date.now() - (c.t || 0) < 7 * 864e5) { galleryMem[id] = { state: 'ok', data: c.d }; return galleryMem[id]; }
+      return null;
+    },
+    async load(id) {
+      const cur = this.get(id);
+      if (cur && (cur.state === 'ok' || cur.state === 'loading')) return cur;
+      galleryMem[id] = { state: 'loading' };
+      try {
+        const d = AMR.trimImages(await AMR.tmdb.images(id));
+        galleryMem[id] = { state: 'ok', data: d };
+        AMR.storage.set('amr.tmdbimg.' + id, { t: Date.now(), d });
+      } catch (e) {
+        galleryMem[id] = { state: 'error' };
+      }
+      return galleryMem[id];
+    },
+    reset() { Object.keys(galleryMem).forEach((k) => delete galleryMem[k]); }
+  };
+
+  // Apaga a cópia local do TMDB (dados dos filmes e galerias)
+  AMR.clearTmdbCache = () => {
+    try {
+      const ls = window.localStorage;
+      const keys = [];
+      for (let i = 0; i < ls.length; i++) { const k = ls.key(i); if (/^amr\.tmdb(img)?\.\d+$/.test(k)) keys.push(k); }
+      keys.forEach((k) => ls.removeItem(k));
+    } catch (e) { /* sem armazenamento */ }
+    AMR.gallery.reset();
+    AMR.films.forEach((f) => { delete f.tmdbx; });
+  };
+
+  /* Capas escolhidas: no aparelho (visitante) e fixadas pela moderação (vão para o Exportar) */
+  const COVER_KEY = 'amr.covers';
+  const PIN_KEY = 'amr.admin.pins';
+  const okPath = (p) => (typeof p === 'string' && /^\/[\w.-]+$/.test(p) ? p : '');
+  AMR.covers = {
+    all() { return AMR.storage.get(COVER_KEY, {}) || {}; },
+    get(filmId) { return this.all()[filmId] || {}; },
+    set(filmId, kind, path) {
+      const all = this.all();
+      const cur = Object.assign({}, all[filmId]);
+      if (okPath(path)) cur[kind] = path; else delete cur[kind];
+      if (Object.keys(cur).length) all[filmId] = cur; else delete all[filmId];
+      AMR.storage.set(COVER_KEY, all);
+    },
+    clear(filmId) { const all = this.all(); if (filmId) delete all[filmId]; AMR.storage.set(COVER_KEY, filmId ? all : {}); }
+  };
+  AMR.pins = {
+    all() { return AMR.storage.get(PIN_KEY, {}) || {}; },
+    get(filmId) { return this.all()[filmId] || {}; },
+    set(filmId, kind, path) {
+      const all = this.all();
+      const cur = Object.assign({}, all[filmId]);
+      if (okPath(path)) cur[kind] = path; else delete cur[kind];
+      if (Object.keys(cur).length) all[filmId] = cur; else delete all[filmId];
+      AMR.storage.set(PIN_KEY, all);
+    },
+    count() { return Object.keys(this.all()).length; }
+  };
+  // Quem abriu a Moderação nesta sessão pode fixar capas no catálogo
+  AMR.isCurator = () => !!(AMR.session.get('amr.curator', false) || AMR.session.get('amr.admin.key', ''));
 
   // Cache local dos dados do TMDB (7 dias; os termos do TMDB permitem até 6 meses)
   AMR.tmdbCache = (id) => {
@@ -245,13 +348,48 @@
   AMR.filmTitle = (f) => (f.tmdbx && AMR.L(f.tmdbx.title)) || AMR.L(f.title) || f.original_title || '';
   AMR.filmOverview = (f) => (f.tmdbx && AMR.L(f.tmdbx.overview)) || AMR.L(f.overview);
   AMR.filmRuntime = (f) => (f.tmdbx && f.tmdbx.runtime) || f.runtime || '';
-  AMR.filmPoster = (f, size) => {
+  AMR.filmPosterPath = (f) => {
     const x = f.tmdbx;
-    if (!x) return '';
-    const p = (x.posterLang && x.posterLang[AMR.lang]) || x.poster;
-    return AMR.tmdb.img(p, size || 'w342');
+    return okPath(AMR.covers.get(f.id).poster) || okPath(AMR.pins.get(f.id).poster) || okPath(AMR.L(f.poster)) ||
+      (x ? okPath((x.posterLang && x.posterLang[AMR.lang]) || x.poster) : '');
   };
-  AMR.filmBackdrop = (f, size) => (f.tmdbx && f.tmdbx.backdrop ? AMR.tmdb.img(f.tmdbx.backdrop, size || 'w1280') : '');
+  AMR.filmBackdropPath = (f) => okPath(AMR.covers.get(f.id).backdrop) || okPath(AMR.pins.get(f.id).backdrop) ||
+    okPath(AMR.L(f.backdrop)) || (f.tmdbx ? okPath(f.tmdbx.backdrop) : '');
+  AMR.filmPoster = (f, size) => AMR.tmdb.img(AMR.filmPosterPath(f), size || 'w342');
+  AMR.filmBackdrop = (f, size) => AMR.tmdb.img(AMR.filmBackdropPath(f), size || 'w1280');
+
+  /* ---------------- lançamentos (edições) ---------------- */
+  const FORMAT_ORDER = ['35mm', '70mm', 'vhs', 'beta', 'ced', 'ld', 'dvd', 'umd', 'bd', '3d', '4k', 'digital', 'stream', 'tv'];
+  AMR.FORMAT_ORDER = FORMAT_ORDER;
+  // Junta as edições do filme (releases) com as edições antigas guardadas dentro das versões (editions)
+  AMR.releasesOf = (f) => {
+    const out = [];
+    (f.releases || []).forEach((r, i) => {
+      if (!r || typeof r !== 'object') return;
+      out.push(Object.assign({ _i: i }, r, { format: FORMAT_ORDER.indexOf(r.format) >= 0 ? r.format : 'other', country: String(r.country || '').toUpperCase().slice(0, 2) }));
+    });
+    f.versions.forEach((v) => (v.editions || []).forEach((e, i) => {
+      out.push({ _i: 1000 + i, legacy: true, date: String(e.year || ''), country: '', format: 'other', formatText: e.format, regionText: e.region, label: e.label, note: e.note, version: v.id });
+    }));
+    out.sort((a, b) => (AMR.dateKey(a.date) || 9e9) - (AMR.dateKey(b.date) || 9e9) || a._i - b._i);
+    return out;
+  };
+
+  /* ---------------- nomes de países e idiomas (Intl) ---------------- */
+  const dn = {};
+  function displayName(type, code) {
+    if (!code) return '';
+    try {
+      const k = type + AMR.lang;
+      dn[k] = dn[k] || new Intl.DisplayNames([AMR.locale()], { type });
+      return dn[k].of(code) || code;
+    } catch (e) { return code; }
+  }
+  AMR.countryName = (code) => displayName('region', String(code || '').toUpperCase());
+  AMR.languageName = (code) => {
+    const n = displayName('language', String(code || '').toLowerCase());
+    return n ? n.charAt(0).toUpperCase() + n.slice(1) : '';
+  };
 
   /* ---------------- servidor (Apps Script) e modo demonstração ---------------- */
   const DEMO = { queue: 'amr.demo.queue', approved: 'amr.demo.approved', seeded: 'amr.demo.seeded' };

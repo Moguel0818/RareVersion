@@ -9,7 +9,15 @@
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = (sel, root) => (root || document).querySelector(sel);
 
-  A.state = { compare: new Set(), compareFilm: null, guideNeed: {}, typeFilter: {}, newsFilter: 'fan', pendingFocus: null, route: '' };
+  A.state = {
+    compare: new Set(), compareFilm: null, guideNeed: {}, typeFilter: {}, newsFilter: 'fan', pendingFocus: null, route: '',
+    filmTab: {}, scoreSel: {}, relFormat: {}, relCountry: {}, galLang: {}, galShow: {}, lb: null
+  };
+
+  const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/>' +
+    '<path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+    '<circle cx="12" cy="12" r="6.6" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+  const EYE = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
   const BRAND_MARK = '<svg class="brand-mark" viewBox="0 0 30 22" width="30" height="22" aria-hidden="true">' +
     '<rect x="1" y="1" width="28" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>' +
@@ -37,6 +45,7 @@
           '<button type="button" data-action="lang" data-lang="pt" aria-pressed="' + (A.lang === 'pt') + '">PT</button>' +
           '<button type="button" data-action="lang" data-lang="en" aria-pressed="' + (A.lang === 'en') + '">EN</button>' +
         '</div>' +
+        '<button type="button" class="icon-btn gear" data-action="settings" aria-label="' + esc(t('st_title')) + '" title="' + esc(t('st_title')) + '">' + GEAR + '</button>' +
         '<button type="button" class="btn small primary suggest-btn" data-action="suggest">' + esc(t('nav_suggest')) + '</button>' +
       '</div></header>';
   }
@@ -48,7 +57,7 @@
       '<p class="muted">' + esc(t('ft_tmdb')) + '</p>' +
       '<p class="muted">' + esc(t('ft_updated', { d: A.fmtDate(A.catalogUpdated) })) +
         (A.backend.mode() === 'demo' ? ' <span class="chip">' + esc(t('ft_demo')) + '</span>' : '') + '</p>' +
-      '<nav class="foot-nav"><a href="#sobre">' + esc(t('nav_about')) + '</a><a href="#admin">' + esc(t('nav_admin')) + '</a></nav>' +
+      '<nav class="foot-nav"><a href="#sobre">' + esc(t('nav_about')) + '</a><button type="button" class="link-btn" data-action="settings">' + esc(t('st_title')) + '</button><a href="#admin">' + esc(t('nav_admin')) + '</a></nav>' +
     '</div></footer>';
   }
 
@@ -103,6 +112,32 @@
         '<div class="dlg-head"><h2 id="cmp-h">' + esc(t('cmp_title')) + '</h2>' +
           '<button type="button" class="icon-btn" data-action="close-dialog" aria-label="' + esc(t('close')) + '">&times;</button></div>' +
         '<div class="dlg-body" id="cmp-body"></div>' +
+      '</dialog>' +
+      '<dialog id="dlg-settings" class="dlg" aria-labelledby="st-h">' +
+        '<form data-form="settings" novalidate autocomplete="off">' +
+        '<div class="dlg-head"><h2 id="st-h">' + esc(t('st_title')) + '</h2>' +
+          '<button type="button" class="icon-btn" data-action="close-dialog" aria-label="' + esc(t('close')) + '">&times;</button></div>' +
+        '<div class="dlg-body">' +
+          '<section class="st-sec"><h3>' + esc(t('st_tmdb_h')) + '</h3><p class="muted">' + esc(t('st_tmdb_lead')) + '</p>' +
+            '<p class="st-status" id="st-status"></p>' +
+            '<label class="st-label" for="st-key">' + esc(t('st_key')) + '</label>' +
+            '<div class="key-row"><input id="st-key" name="tmdbkey" type="password" spellcheck="false" autocapitalize="off" autocomplete="off">' +
+              '<button type="button" class="icon-btn eye" data-action="st-toggle" aria-pressed="false" aria-label="' + esc(t('st_show')) + '" title="' + esc(t('st_show')) + '">' + EYE + '</button></div>' +
+            '<div class="st-btns"><button type="submit" class="btn primary">' + esc(t('st_save')) + '</button>' +
+              '<button type="button" class="btn ghost" data-action="st-remove" id="st-remove">' + esc(t('st_remove')) + '</button></div>' +
+            '<p class="form-msg" role="status" aria-live="polite"></p>' +
+            '<p class="small muted">' + esc(t('st_help')) + ' <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">' + esc(t('st_get_key')) + '</a></p>' +
+          '</section>' +
+          '<section class="st-sec"><h3>' + esc(t('st_data_h')) + '</h3><p class="small muted">' + esc(t('st_data_lead')) + '</p>' +
+            '<div class="st-btns"><button type="button" class="btn small ghost" data-action="st-clear-cache">' + esc(t('st_clear_cache')) + '</button>' +
+            '<button type="button" class="btn small ghost" data-action="st-clear-covers">' + esc(t('st_clear_covers')) + '</button></div></section>' +
+        '</div>' +
+        '<div class="dlg-foot"><button type="button" class="btn ghost" data-action="close-dialog">' + esc(t('close')) + '</button></div>' +
+      '</form></dialog>' +
+      '<dialog id="dlg-image" class="dlg lightbox" aria-labelledby="lb-h">' +
+        '<div class="dlg-head"><h2 id="lb-h" class="sr-only">' + esc(t('gl_title')) + '</h2>' +
+          '<button type="button" class="icon-btn" data-action="close-dialog" aria-label="' + esc(t('close')) + '">&times;</button></div>' +
+        '<div class="lb-body" id="lb-body"></div>' +
       '</dialog>';
   }
 
@@ -118,7 +153,32 @@
   function currentRoute() {
     let h = '';
     try { h = decodeURIComponent((window.location.hash || '').replace(/^#/, '')); } catch (e) { h = ''; }
-    return h === 'inicio' ? '' : h;
+    const parts = h.split('/');
+    const base = parts[0] === 'inicio' ? '' : parts[0];
+    return { base, tab: parts[1] || '' };
+  }
+
+  // Troca a aba do filme sem recarregar a página; o endereço fica compartilhável (#filme/aba)
+  function setFilmTab(filmId, tab, keepScroll) {
+    const f = A.film(filmId);
+    if (!f) return;
+    A.state.filmTab[filmId] = tab;
+    const def = V.filmTabs(f)[0];
+    const h = '#' + filmId + (tab && tab !== def ? '/' + tab : '');
+    try { if (window.location.hash !== h) history.replaceState(null, '', h); } catch (e) { /* sem history (prévia) */ }
+    A.rerender();
+    if (!keepScroll) {
+      const bar = document.getElementById('film-tabs');
+      if (bar) { const top = bar.getBoundingClientRect().top; if (top < 0) window.scrollTo(0, window.scrollY + top); }
+    }
+    maybeLoadGallery();
+  }
+
+  function maybeLoadGallery() {
+    const f = A.film(A.state.route);
+    if (!f || !f.tmdb || V.filmTab(f) !== 'galeria' || A.tmdb.mode() === 'off') return;
+    if (A.gallery.get(f.tmdb)) return;
+    A.gallery.load(f.tmdb).then(() => { if (A.state.route === f.id && V.filmTab(f) === 'galeria') A.rerender(); });
   }
 
   function viewFor(r) {
@@ -146,9 +206,16 @@
   }
 
   function route() {
-    const r = currentRoute();
+    const cr = currentRoute();
+    const r = cr.base;
     const changedPage = r !== A.state.route;
     A.state.route = r;
+    const film = A.film(r);
+    if (film) {
+      const tabs = V.filmTabs(film);
+      if (cr.tab && tabs.indexOf(cr.tab) >= 0) A.state.filmTab[film.id] = cr.tab;
+      else if (changedPage) A.state.filmTab[film.id] = tabs[0];
+    }
     if (changedPage && A.state.compareFilm && A.state.compareFilm !== r) { A.state.compare.clear(); A.state.compareFilm = null; }
     const main = $('#main');
     main.innerHTML = viewFor(r);
@@ -163,6 +230,7 @@
     } else if (changedPage) {
       window.scrollTo(0, 0);
     }
+    maybeLoadGallery();
   }
 
   // Redesenha a tela atual sem perder a posição de rolagem
@@ -195,7 +263,12 @@
     let el = document.getElementById('v-' + id);
     if (!el) {
       const hit = A.findVersion(id);
-      if (hit && A.state.typeFilter[hit.film.id]) { A.state.typeFilter[hit.film.id] = 'all'; A.rerender(); el = document.getElementById('v-' + id); }
+      if (hit) {
+        if (A.state.typeFilter[hit.film.id]) A.state.typeFilter[hit.film.id] = 'all';
+        if (A.state.route === hit.film.id && V.filmTab(hit.film) !== 'versoes') { setFilmTab(hit.film.id, 'versoes', true); }
+        else A.rerender();
+        el = document.getElementById('v-' + id);
+      }
     }
     if (!el) return;
     el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
@@ -205,7 +278,12 @@
   }
 
   function focusSection(id) {
-    const el = document.getElementById(id);
+    let el = document.getElementById(id);
+    if (!el) {
+      const f = A.film(A.state.route);
+      const tab = V.SECTION_TAB[id];
+      if (f && tab && V.filmTabs(f).indexOf(tab) >= 0) { setFilmTab(f.id, tab, true); el = document.getElementById(id); }
+    }
     if (!el) return;
     el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
     const h = el.querySelector('h2');
@@ -448,9 +526,168 @@
       case 'tmdb-search':
         tmdbSearch(el.dataset.q);
         break;
+      case 'film-tab':
+        setFilmTab(el.dataset.film, el.dataset.tab);
+        { const b = document.getElementById('tab-' + el.dataset.tab); if (b) b.focus({ preventScroll: true }); }
+        break;
+      case 'score-sel':
+        A.state.scoreSel[el.dataset.film] = el.dataset.sel;
+        A.rerender();
+        { const b = document.querySelector('.score-table [data-sel="' + el.dataset.sel + '"]'); if (b && el.closest('.score-table')) b.focus({ preventScroll: true }); }
+        break;
+      case 'rel-format':
+        A.state.relFormat[el.dataset.film] = el.dataset.format;
+        A.rerender();
+        break;
+      case 'settings':
+        e.preventDefault();
+        hideSearch();
+        openSettings();
+        break;
+      case 'st-toggle': {
+        const input = $('#st-key');
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        el.setAttribute('aria-pressed', String(show));
+        el.setAttribute('aria-label', t(show ? 'st_hide' : 'st_show'));
+        el.title = t(show ? 'st_hide' : 'st_show');
+        break;
+      }
+      case 'st-remove':
+        A.tmdb.setUserKey('');
+        $('#st-key').value = '';
+        settingsMsg(t('st_removed'), 'ok');
+        refreshSettingsStatus();
+        A.gallery.reset();
+        A.rerender();
+        break;
+      case 'st-clear-cache':
+        A.clearTmdbCache();
+        A.toast(t('st_cache_cleared'));
+        A.rerender();
+        reloadTmdb();
+        break;
+      case 'st-clear-covers':
+        A.covers.clear();
+        A.toast(t('st_covers_cleared'));
+        A.rerender();
+        break;
+      case 'gal-lang':
+        A.state.galLang[el.dataset.film] = el.dataset.lang;
+        delete A.state.galShow[el.dataset.film + ':posters'];
+        A.rerender();
+        break;
+      case 'gal-more': {
+        const k = el.dataset.film + ':' + el.dataset.kind;
+        A.state.galShow[k] = (A.state.galShow[k] || 24) + 24;
+        A.rerender();
+        break;
+      }
+      case 'gal-retry': {
+        const f = A.film(el.dataset.film);
+        if (f) { A.gallery.reset(); maybeLoadGallery(); A.rerender(); }
+        break;
+      }
+      case 'gal-open':
+        A.state.lb = { film: el.dataset.film, kind: el.dataset.kind, i: Number(el.dataset.i) || 0 };
+        openDialog('dlg-image');
+        renderLightbox();
+        break;
+      case 'gal-step':
+        stepLightbox(Number(el.dataset.dir) || 0);
+        break;
+      case 'gal-cover':
+        A.covers.set(el.dataset.film, el.dataset.target, el.dataset.path);
+        A.toast(t(el.dataset.target === 'poster' ? 'gl_cover_set' : 'gl_bg_set'));
+        A.rerender();
+        renderLightbox();
+        break;
+      case 'gal-reset':
+        A.covers.clear(el.dataset.film);
+        A.toast(t('gl_reset_done'));
+        A.rerender();
+        renderLightbox();
+        break;
+      case 'gal-pin':
+        A.pins.set(el.dataset.film, el.dataset.target, el.dataset.path);
+        A.toast(t(el.dataset.path ? 'gl_pin_done' : 'gl_unpin_done'));
+        A.rerender();
+        renderLightbox();
+        break;
       default:
         break;
     }
+  }
+
+  /* ---------------- galeria ampliada ---------------- */
+  function renderLightbox() {
+    const lb = A.state.lb;
+    const f = lb && A.film(lb.film);
+    const body = $('#lb-body');
+    if (!f || !body) return;
+    body.innerHTML = V.lightbox(f, lb.kind, lb.i);
+  }
+  function stepLightbox(dir) {
+    const lb = A.state.lb;
+    const f = lb && A.film(lb.film);
+    if (!f || !dir) return;
+    const n = V.galleryList(f, lb.kind).length;
+    const next = Math.max(0, Math.min(n - 1, lb.i + dir));
+    if (next === lb.i) return;
+    lb.i = next;
+    renderLightbox();
+  }
+
+  /* ---------------- configurações (chave do TMDB) ---------------- */
+  function settingsMsg(text, kind) {
+    const m = document.querySelector('#dlg-settings .form-msg');
+    if (!m) return;
+    m.textContent = text || '';
+    m.className = 'form-msg' + (kind ? ' ' + kind : '');
+  }
+  function refreshSettingsStatus() {
+    const el = $('#st-status');
+    if (!el) return;
+    const mode = A.tmdb.userKey() ? 'user' : (A.cfg('APPS_SCRIPT_URL') || A.cfg('TMDB_API_KEY') ? 'proxy' : 'off');
+    el.textContent = t('st_status_' + mode);
+    el.className = 'st-status s-' + mode;
+    const rm = $('#st-remove');
+    if (rm) rm.hidden = !A.tmdb.userKey();
+  }
+  function openSettings() {
+    const d = openDialog('dlg-settings');
+    if (!d) return;
+    const input = $('#st-key');
+    input.value = A.tmdb.userKey();
+    input.type = 'password';
+    const eye = d.querySelector('[data-action="st-toggle"]');
+    if (eye) { eye.setAttribute('aria-pressed', 'false'); eye.setAttribute('aria-label', t('st_show')); eye.title = t('st_show'); }
+    settingsMsg('');
+    refreshSettingsStatus();
+    setTimeout(() => input.focus(), 30);
+  }
+  async function reloadTmdb() {
+    A.gallery.reset();
+    let changed = false;
+    for (const f of A.films) { if (await A.enrichFilm(f)) changed = true; }
+    if (changed) A.rerender();
+    maybeLoadGallery();
+  }
+  async function saveSettings(form) {
+    const key = String(form.querySelector('[name="tmdbkey"]').value || '').trim();
+    if (!key) { settingsMsg(t('st_empty'), 'error'); return; }
+    if (!A.tmdb.looksLikeKey(key)) { settingsMsg(t('st_format'), 'error'); return; }
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    settingsMsg(t('st_testing'));
+    const res = await A.tmdb.test(key);
+    btn.disabled = false;
+    if (res === 'bad') { settingsMsg(t('st_bad'), 'error'); return; }
+    A.tmdb.setUserKey(key);
+    settingsMsg(t(res === 'ok' ? 'st_ok' : 'st_neterr'), res === 'ok' ? 'ok' : 'warn');
+    refreshSettingsStatus();
+    A.rerender();
+    if (res === 'ok') reloadTmdb();
   }
 
   function onChange(e) {
@@ -468,6 +705,11 @@
         A.state.compare.delete(id);
       }
       updateTray();
+    } else if (el.matches('select[data-action="rel-country"]')) {
+      A.state.relCountry[el.dataset.film] = el.value;
+      A.rerender();
+      const sel = document.querySelector('select[data-action="rel-country"]');
+      if (sel) sel.focus({ preventScroll: true });
     } else if (el.name === 'kind' && el.closest('form[data-form="suggest"]')) {
       syncKind(el.closest('form'));
     }
@@ -479,10 +721,12 @@
     e.preventDefault();
     const name = form.dataset.form;
     if (name === 'suggest') submitSuggest(form);
+    else if (name === 'settings') saveSettings(form);
     else if (A.adminSubmit) A.adminSubmit(name, form);
   }
 
   function onInput(e) {
+    if (e.target.id === 'st-key') { settingsMsg(''); return; }
     if (e.target.id !== 'q') return;
     const q = e.target.value;
     clearTimeout(searchTimer);
@@ -490,6 +734,19 @@
   }
 
   function onKeydown(e) {
+    const lb = document.getElementById('dlg-image');
+    if (lb && lb.open && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      e.preventDefault();
+      stepLightbox(e.key === 'ArrowLeft' ? -1 : 1);
+      return;
+    }
+    if (e.target.classList && e.target.classList.contains('ftab') && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      const tabs = Array.from(document.querySelectorAll('.ftab'));
+      const i = tabs.indexOf(e.target) + (e.key === 'ArrowLeft' ? -1 : 1);
+      const next = tabs[(i + tabs.length) % tabs.length];
+      if (next) { e.preventDefault(); next.click(); }
+      return;
+    }
     if (e.target.id === 'q') {
       if (e.key === 'Escape') { e.target.value = ''; hideSearch(); }
       if (e.key === 'Enter') {
@@ -537,6 +794,7 @@
       }
       if (changed) A.rerender();
     }
+    maybeLoadGallery();
   }
 
   function init() {
@@ -551,6 +809,7 @@
     document.addEventListener('keydown', onKeydown);
     document.addEventListener('focusin', onFocusIn);
     document.addEventListener('error', onImgError, true);
+    document.addEventListener('close', (e) => { if (e.target && e.target.id === 'dlg-image') A.state.lb = null; }, true);
     loadRemote();
   }
 

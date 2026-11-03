@@ -48,6 +48,7 @@
         '<input id="ad-key" name="key" type="password" autocomplete="current-password" required>' +
         '<button class="btn primary" type="submit">' + esc(t('ad_login')) + '</button></form></section>';
     }
+    A.session.set('amr.curator', true); // pode fixar capas no catálogo pela Galeria
     if (!S.data && !S.loading && !S.error) setTimeout(load, 0);
     const pending = S.data ? S.data.pending.length : 0;
     const versions = A.allVersions().length;
@@ -172,8 +173,17 @@
       const o = A.clone(f);
       delete o.tmdbx;
       delete o.community;
-      (o.versions || []).forEach((v) => { delete v.community; });
+      (o.versions || []).forEach((v) => {
+        delete v.community;
+        if (!v.scores || !Object.keys(v.scores).length) delete v.scores;
+        if (!v.reviews || !v.reviews.length) delete v.reviews;
+      });
       if (!o.notes || !o.notes.length) delete o.notes;
+      if (!o.releases || !o.releases.length) delete o.releases;
+      if (!o.links || !Object.keys(o.links).length) delete o.links;
+      const pin = A.pins.get(o.id); // capas fixadas pela Galeria
+      if (pin.poster) o.poster = pin.poster;
+      if (pin.backdrop) o.backdrop = pin.backdrop;
       return o;
     };
     const out = { schema: 1, updated: new Date().toISOString().slice(0, 10), films: A.films.map(clean), sources: A.sources };
@@ -182,6 +192,7 @@
 
   function exportTab() {
     return '<p>' + esc(t('ad_export_lead')) + '</p>' +
+      (A.pins.count() ? '<p class="chip ok">' + esc(t('ad_pins', { n: A.pins.count() })) + '</p>' : '') +
       '<p class="actions"><button type="button" class="btn primary" data-action="adm-copy">' + esc(t('ad_export_copy')) + '</button>' +
       (A.isTopWindow ? '<button type="button" class="btn ghost" data-action="adm-download">' + esc(t('ad_export_dl')) + '</button>' : '') + '</p>' +
       '<label class="sr-only" for="ad-export">catalogo.js</label><textarea id="ad-export" class="export" rows="16" readonly spellcheck="false">' + esc(buildExport()) + '</textarea>';
@@ -191,7 +202,7 @@
     const cfg = A.storage.get('amr.cfg', {}) || {};
     return '<form class="grid-form one" data-form="adm-config">' +
       '<label><span>' + esc(t('ad_cfg_backend')) + '</span><input name="url" type="url" placeholder="https://script.google.com/macros/s/…/exec" value="' + esc(cfg.APPS_SCRIPT_URL || '') + '"><small>' + esc(t('ad_cfg_backend_hint')) + '</small></label>' +
-      '<label><span>' + esc(t('ad_cfg_tmdb')) + '</span><input name="tmdb" type="password" autocomplete="off" value="' + esc(A.storage.get('amr.admin.tmdbKey', '')) + '"><small>' + esc(t('ad_cfg_tmdb_hint')) + '</small></label>' +
+      '<label><span>' + esc(t('ad_cfg_tmdb')) + '</span><input name="tmdb" type="password" autocomplete="off" value="' + esc(A.tmdb.userKey()) + '"><small>' + esc(t('ad_cfg_tmdb_hint')) + '</small></label>' +
       '<button class="btn primary" type="submit">' + esc(t('ad_cfg_save')) + '</button></form>' +
       (A.backend.mode() === 'demo' ? '<p><button type="button" class="btn ghost" data-action="adm-reset">' + esc(t('ad_cfg_reset')) + '</button></p>' : '');
   }
@@ -399,7 +410,7 @@
       if (url) cfg.APPS_SCRIPT_URL = url; else delete cfg.APPS_SCRIPT_URL;
       A.storage.set('amr.cfg', cfg);
       const key = String(fd.get('tmdb') || '').trim();
-      if (key) A.storage.set('amr.admin.tmdbKey', key); else A.storage.del('amr.admin.tmdbKey');
+      A.tmdb.setUserKey(key);
       A.toast(t('ad_cfg_saved'));
       setTimeout(() => window.location.reload(), 600);
     }

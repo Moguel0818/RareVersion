@@ -86,6 +86,11 @@ function doGet(e) {
         return json_({ ok: true, items: aprovados_() });
       case 'tmdb_search':
         return json_(tmdb_('search/movie', { query: texto_(p.q, 120), language: idioma_(p.lang), include_adult: 'false' }, 21600));
+      case 'tmdb_images': {
+        const idImg = Number(p.id);
+        if (!idImg || idImg < 1) return json_({ ok: false, error: 'id_invalido' });
+        return json_(tmdbImagens_(idImg));
+      }
       case 'tmdb_movie': {
         const id = parseInt(p.id, 10);
         if (!id) return json_({ ok: false, error: 'id_invalido' });
@@ -255,6 +260,23 @@ function tmdb_(caminho, params, ttl) {
 }
 
 function idioma_(l) { return l === 'en-US' ? 'en-US' : 'pt-BR'; }
+
+// Galeria: todas as imagens do filme (todos os idiomas), em formato enxuto para caber no cache
+// Cada item: [caminho, idioma, largura, altura, nota]
+function tmdbImagens_(id) {
+  const cache = CacheService.getScriptCache();
+  const chaveCache = 'tmdbimg:' + id;
+  const hit = cache.get(chaveCache);
+  if (hit) return JSON.parse(hit);
+  const bruto = tmdb_('movie/' + id + '/images', {}, 60);
+  if (bruto && bruto.ok === false) return bruto;
+  const enxuga = (lista, max) => (lista || []).slice(0, max).map((i) =>
+    [i.file_path, i.iso_639_1 || '', i.width || 0, i.height || 0, Math.round((i.vote_average || 0) * 10) / 10]);
+  const out = { posters: enxuga(bruto.posters, 300), backdrops: enxuga(bruto.backdrops, 150), logos: enxuga(bruto.logos, 80) };
+  const texto = JSON.stringify(out);
+  if (texto.length < 95000) cache.put(chaveCache, texto, 21600);
+  return out;
+}
 
 /* ------------------------------------------------------------------ */
 /* Radar de novos scans                                                  */

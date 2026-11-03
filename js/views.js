@@ -332,13 +332,17 @@
     return '<dl class="specs">' + rows.map((r) => '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>').join('') + '</dl>';
   }
 
-  function editionsTable(v) {
-    if (!v.editions || !v.editions.length) return '';
-    return '<h4>' + esc(t('fp_editions')) + '</h4><div class="table-wrap"><table class="eds"><thead><tr>' +
-      ['fp_ed_year', 'fp_ed_format', 'fp_ed_region', 'fp_ed_label', 'fp_ed_note'].map((k) => '<th scope="col">' + esc(t(k)) + '</th>').join('') +
-      '</tr></thead><tbody>' + v.editions.map((e) =>
-        '<tr><td>' + esc(e.year || '') + '</td><td>' + esc(L(e.format)) + '</td><td>' + esc(L(e.region)) + '</td><td>' + esc(L(e.label)) + '</td><td>' + esc(L(e.note)) + '</td></tr>').join('') +
-      '</tbody></table></div>';
+  function fmtLabel(r) { return r.format === 'other' ? (L(r.formatText) || t('fmt_other')) : t('fmt_' + r.format); }
+  function placeText(r) { return r.country ? A.countryName(r.country) : L(r.regionText); }
+
+  function editionsTable(f, v) {
+    const list = A.releasesOf(f).filter((r) => r.version === v.id);
+    if (!list.length) return '';
+    return '<h4>' + esc(t('rl_with_master')) + '</h4><ul class="v-eds">' + list.map((r) =>
+      '<li><span class="v-ed-date">' + esc(r.date ? A.fmtDate(r.date) : t('rl_nodate')) + '</span> ' +
+      '<span class="fmt f-' + esc(r.format) + '">' + esc(fmtLabel(r)) + '</span> ' +
+      esc([placeText(r), L(r.label), L(r.name)].filter(Boolean).join(' · ')) + '</li>').join('') + '</ul>' +
+      '<p><button type="button" class="link-chip" data-action="film-tab" data-film="' + esc(f.id) + '" data-tab="lancamentos">' + esc(t('rl_see_tab')) + '</button></p>';
   }
 
   function versionRow(f, v) {
@@ -356,7 +360,7 @@
         '<details class="vrow-more"><summary>' + esc(t('fp_details')) + '</summary>' +
           specRows(f, v) +
           (diffs.length ? '<h4>' + esc(t('fp_diffs')) + '</h4><ul class="diffs">' + diffs.map((d) => '<li>' + esc(d) + '</li>').join('') + '</ul>' : '') +
-          editionsTable(v) +
+          editionsTable(f, v) +
           (sourceLinks(v.src, v.src_urls) ? '<h4>' + esc(t('fp_sources')) + '</h4>' + sourceLinks(v.src, v.src_urls) : '') +
         '</details>' +
       '</div>' +
@@ -435,6 +439,248 @@
     return html ? '<section class="sec" id="sec-sources"><div class="sec-head"><h2>' + esc(t('fp_sources')) + '</h2></div>' + html + '</section>' : '';
   }
 
+  /* ---------------- avaliação ---------------- */
+  const CRITERIA = ['fidelity', 'picture', 'audio', 'extras'];
+  function scoreOf(v, c) { const x = v.scores && v.scores[c]; const n = Math.round(Number(x && x.v)); return n >= 1 && n <= 5 ? n : 0; }
+  function scoredVersions(f) { return sorted(f).filter((v) => CRITERIA.some((c) => scoreOf(v, c))); }
+  function dots(n) {
+    let h = '';
+    for (let i = 1; i <= 5; i++) h += '<i' + (i <= n ? ' class="on"' : '') + '></i>';
+    return '<span class="dots" aria-hidden="true">' + h + '</span>';
+  }
+  function fmtScore(x, scale) {
+    if (typeof x === 'number') return x.toLocaleString(A.locale(), { maximumFractionDigits: 1 }) + '/' + (scale || 5);
+    return String(x);
+  }
+  function reviewItem(r) {
+    const s = A.sources[r.src] || {};
+    const url = A.safeUrl(r.url || s.u);
+    const label = r.label || String(s.t || '').split(' — ')[0];
+    const parts = [];
+    ['video', 'audio', 'extras', 'overall'].forEach((k) => { if (r[k] != null && r[k] !== '') parts.push(t('sc_r_' + k) + ' ' + fmtScore(r[k], r.scale)); });
+    if (r.text) parts.push(L(r.text));
+    return '<li>' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(label) + ICON.ext + '</a>' : esc(label)) +
+      (parts.length ? ' — ' + esc(parts.join(' · ')) : '') + (r.date ? ' <span class="muted">(' + esc(A.fmtDate(r.date)) + ')</span>' : '') + '</li>';
+  }
+  function dubNames(f, v) {
+    return (v.dubs || []).map((id) => f.dubs.find((d) => d.id === id)).filter(Boolean).map((d) => esc(d.year ? String(d.year) : L(d.name))).join(', ');
+  }
+  function currentScore(f, list, crit) {
+    const raw = String(A.state.scoreSel[f.id] || '');
+    const i = raw.lastIndexOf(':');
+    const v = list.find((x) => x.id === raw.slice(0, i));
+    const c = raw.slice(i + 1);
+    if (v && crit.indexOf(c) >= 0 && scoreOf(v, c)) return { v, c };
+    const c0 = crit[0];
+    const best = list.slice().sort((a, b) => scoreOf(b, c0) - scoreOf(a, c0))[0];
+    return { v: best, c: c0 };
+  }
+  function scoreDetail(f, v, c) {
+    const n = scoreOf(v, c);
+    const x = v.scores[c] || {};
+    const src = sourceLinks(x.src, x.src_urls);
+    return '<div class="sc-detail t-' + esc(v.type) + '" aria-live="polite">' +
+      '<p class="sc-detail-k">' + esc(t('sc_' + c)) + ' · <b>' + esc(L(v.name)) + '</b></p>' +
+      '<p class="sc-detail-n lv' + n + '">' + dots(n) + ' <span>' + esc(t('sc_of5', { n })) + ' · ' + esc(t('sc_lv' + n)) + '</span></p>' +
+      (L(x.why) ? '<p class="sc-why">' + esc(L(x.why)) + '</p>' : '') +
+      (src ? '<div class="sc-src"><h4>' + esc(t('sc_sources')) + '</h4>' + src + '</div>' : '') +
+      (v.reviews.length ? '<div class="sc-reviews"><h4>' + esc(t('sc_reviews')) + '</h4><ul>' + v.reviews.map(reviewItem).join('') + '</ul></div>' : '') +
+      '<p><a class="link-chip" href="#' + esc(f.id) + '" data-focus-version="' + esc(v.id) + '">' + esc(t('sc_see_version')) + '</a></p>' +
+    '</div>';
+  }
+  function scoreSection(f) {
+    const list = scoredVersions(f);
+    if (!list.length) return '';
+    const crit = CRITERIA.filter((c) => list.some((v) => scoreOf(v, c)));
+    const hasDub = f.dubs.length && list.some((v) => (v.dubs || []).length);
+    const sel = currentScore(f, list, crit);
+    const selBtn = (v, c, inner, cls, label) => '<button type="button" class="' + cls + (sel.v === v && sel.c === c ? ' on' : '') + '" aria-pressed="' + (sel.v === v && sel.c === c) + '" data-action="score-sel" data-film="' + esc(f.id) + '" data-sel="' + esc(v.id + ':' + c) + '"' + (label ? ' aria-label="' + esc(label) + '"' : '') + '>' + inner + '</button>';
+    const picks = crit.map((c) => {
+      let best = 0;
+      list.forEach((v) => { best = Math.max(best, scoreOf(v, c)); });
+      const top = list.filter((v) => scoreOf(v, c) === best);
+      return '<div class="pick"><span class="pick-k">' + esc(t('sc_pick_' + c)) + '</span>' +
+        '<span class="pick-vs">' + top.map((v) => selBtn(v, c, '<i class="tdot t-' + esc(v.type) + '"></i>' + esc(L(v.name)), 'pick-v')).join('<span class="pick-tie">' + esc(t('sc_tie')) + '</span>') + '</span>' +
+        '<span class="pick-n lv' + best + '">' + dots(best) + ' ' + best + '/5</span></div>';
+    }).join('');
+    const head = '<tr><th scope="col">' + esc(t('sc_version')) + '</th>' +
+      crit.map((c) => '<th scope="col"><span title="' + esc(t('scd_' + c)) + '">' + esc(t('sc_' + c)) + '</span></th>').join('') +
+      (hasDub ? '<th scope="col">' + esc(t('sc_dub')) + '</th>' : '') + '</tr>';
+    const rows = list.map((v) => '<tr><th scope="row"><span class="sc-name t-' + esc(v.type) + '"><i></i>' + esc(L(v.name)) + '</span></th>' +
+      crit.map((c) => {
+        const n = scoreOf(v, c);
+        return '<td>' + (n ? selBtn(v, c, dots(n) + '<b>' + n + '</b>', 'sc lv' + n, t('sc_' + c) + ', ' + L(v.name) + ': ' + t('sc_of5', { n }) + ' (' + t('sc_lv' + n) + ')') : '<span class="sc-none" title="' + esc(t('sc_none')) + '">–</span>') + '</td>';
+      }).join('') +
+      (hasDub ? '<td class="sc-dub">' + (dubNames(f, v) || '<span class="sc-none">–</span>') + '</td>' : '') + '</tr>').join('');
+    return '<section class="sec score" id="sec-score">' +
+      '<div class="sec-head"><h2>' + esc(t('sc_title')) + '</h2><p class="sec-lead">' + esc(t('sc_lead')) + '</p></div>' +
+      '<div class="picks">' + picks + '</div>' +
+      (L(f.score_note) ? '<p class="score-note">' + esc(L(f.score_note)) + '</p>' : '') +
+      '<div class="score-grid"><div class="table-wrap"><table class="score-table"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div>' +
+      scoreDetail(f, sel.v, sel.c) + '</div>' +
+      '<details class="score-method"><summary>' + esc(t('sc_method_t')) + '</summary><p>' + esc(t('sc_method')) + '</p><dl>' +
+        crit.map((c) => '<div><dt>' + esc(t('sc_' + c)) + '</dt><dd>' + esc(t('scd_' + c)) + '</dd></div>').join('') + '</dl></details>' +
+    '</section>';
+  }
+
+  /* ---------------- lançamentos ---------------- */
+  const LINK_LABELS = { bluray: 'Blu-ray.com', dvdcompare: 'DVDCompare', lddb: 'LaserDisc Database', caps: 'Caps-a-holic' };
+  function srcMini(r) {
+    const seen = {};
+    const items = [];
+    (r.src || []).forEach((k) => { const s = A.sources[k]; if (s && A.safeUrl(s.u) && !seen[s.u]) { seen[s.u] = 1; items.push({ u: s.u, t: s.t }); } });
+    (r.src_urls || []).forEach((u) => { if (A.safeUrl(u) && !seen[u]) { seen[u] = 1; items.push({ u, t: A.host(u) }); } });
+    return items.map((x) => '<a href="' + esc(x.u) + '" target="_blank" rel="noopener noreferrer" title="' + esc(x.t) + '">' + esc(A.host(x.u)) + ICON.ext + '</a>').join('');
+  }
+  function masterCell(f, r) {
+    const v = r.version && f.versions.find((x) => x.id === r.version);
+    if (!v) return '<span class="muted">' + esc(t('rl_unknown_master')) + '</span>';
+    return '<a class="rl-master t-' + esc(v.type) + '" href="#' + esc(f.id) + '" data-focus-version="' + esc(v.id) + '"><i></i>' + esc(L(v.name)) + '</a>' +
+      (r.version_sure === false ? ' <span class="muted">(' + esc(t('rl_probable')) + ')</span>' : '');
+  }
+  function releasesSection(f) {
+    const all = A.releasesOf(f);
+    const head = '<div class="sec-head"><h2>' + esc(t('rl_title')) + '</h2><p class="sec-lead">' + esc(t('rl_lead')) + '</p></div>';
+    const links = Object.keys(f.links || {}).filter((k) => A.safeUrl(f.links[k]));
+    const more = links.length ? '<p class="rel-more">' + esc(t('rl_more')) + ' ' + links.map((k) =>
+      '<a href="' + esc(f.links[k]) + '" target="_blank" rel="noopener noreferrer">' + esc(LINK_LABELS[k] || A.host(f.links[k])) + ICON.ext + '</a>').join(' ') + '</p>' : '';
+    if (!all.length) return '<section class="sec" id="sec-releases">' + head + '<p class="muted">' + esc(t('rl_empty')) + '</p>' + more + '</section>';
+    const fmts = A.FORMAT_ORDER.concat(['other']).filter((x) => all.some((r) => r.format === x));
+    let curF = A.state.relFormat[f.id] || 'all';
+    if (curF !== 'all' && fmts.indexOf(curF) < 0) curF = 'all';
+    const countries = Array.from(new Set(all.map((r) => r.country).filter(Boolean))).sort((a, b) => A.countryName(a).localeCompare(A.countryName(b), A.locale()));
+    let curC = A.state.relCountry[f.id] || '';
+    if (countries.indexOf(curC) < 0) curC = '';
+    const chip = (key, label, n) => '<button type="button" class="fchip' + (key === curF ? ' on' : '') + '" aria-pressed="' + (key === curF) + '" data-action="rel-format" data-film="' + esc(f.id) + '" data-format="' + esc(key) + '">' + esc(label) + ' <span class="fcount">' + n + '</span></button>';
+    const chips = chip('all', t('rl_all'), all.length) + fmts.map((x) => chip(x, x === 'other' ? t('fmt_other') : t('fmt_' + x), all.filter((r) => r.format === x).length)).join('');
+    const select = countries.length > 1 ? '<label class="rel-country"><span>' + esc(t('rl_country')) + '</span><select data-action="rel-country" data-film="' + esc(f.id) + '">' +
+      '<option value="">' + esc(t('rl_any_country')) + '</option>' + countries.map((c) => '<option value="' + esc(c) + '"' + (c === curC ? ' selected' : '') + '>' + esc(A.countryName(c)) + '</option>').join('') + '</select></label>' : '';
+    const rows = all.filter((r) => (curF === 'all' || r.format === curF) && (!curC || r.country === curC));
+    const th = ['rl_date', 'rl_country', 'rl_format', 'rl_edition', 'rl_master', 'rl_source'].map((k) => '<th scope="col">' + esc(t(k)) + '</th>').join('');
+    const body = rows.map((r) => '<tr>' +
+      '<td data-label="' + esc(t('rl_date')) + '" class="rl-date">' + (r.date ? esc(A.fmtDate(r.date)) : '<span class="muted">' + esc(t('rl_nodate')) + '</span>') + '</td>' +
+      '<td data-label="' + esc(t('rl_country')) + '">' + (r.country ? '<span class="cc">' + esc(r.country) + '</span> ' : '') + esc(placeText(r)) + '</td>' +
+      '<td data-label="' + esc(t('rl_format')) + '"><span class="fmt f-' + esc(r.format) + '">' + esc(fmtLabel(r)) + '</span></td>' +
+      '<td data-label="' + esc(t('rl_edition')) + '" class="rl-ed"><b>' + esc(L(r.label)) + '</b>' + (L(r.name) ? ' <span>' + esc(L(r.name)) + '</span>' : '') +
+        (L(r.specs) ? '<small class="rl-specs">' + esc(L(r.specs)) + '</small>' : '') + (L(r.note) ? '<small class="rl-note">' + esc(L(r.note)) + '</small>' : '') + '</td>' +
+      '<td data-label="' + esc(t('rl_master')) + '">' + masterCell(f, r) + '</td>' +
+      '<td data-label="' + esc(t('rl_source')) + '" class="rl-src">' + (srcMini(r) || '<span class="muted">–</span>') + '</td></tr>').join('');
+    return '<section class="sec" id="sec-releases">' + head +
+      '<div class="rel-tools"><div class="fchips" role="group" aria-label="' + esc(t('rl_format')) + '">' + chips + '</div>' + select + '</div>' +
+      '<p class="rel-count muted">' + esc(rows.length === 1 ? t('rl_one') : t('rl_n', { n: rows.length })) + '</p>' +
+      '<div class="table-wrap"><table class="rels"><thead><tr>' + th + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+      more + '</section>';
+  }
+
+  /* ---------------- galeria ---------------- */
+  const GL_STEP = 24;
+  const GL_SIZES = { posters: ['w185', 'w780'], backdrops: ['w300', 'w1280'], logos: ['w185', 'w500'] };
+  function galLangs(f, d) {
+    const count = {};
+    d.posters.forEach((p) => { count[p[1]] = (count[p[1]] || 0) + 1; });
+    const pref = [A.lang, A.lang === 'pt' ? 'en' : 'pt'];
+    return Object.keys(count).sort((a, b) => {
+      const pa = pref.indexOf(a), pb = pref.indexOf(b);
+      if (pa >= 0 || pb >= 0) return (pa < 0 ? 9 : pa) - (pb < 0 ? 9 : pb);
+      return count[b] - count[a];
+    }).map((code) => ({ code, n: count[code] }));
+  }
+  function langLabel(code) { return code ? A.languageName(code) : t('gl_notext'); }
+  V.galleryList = function (f, kind) {
+    const g = A.gallery.get(f.tmdb);
+    if (!g || g.state !== 'ok') return [];
+    const list = g.data[kind] || [];
+    if (kind !== 'posters') return list;
+    const lang = A.state.galLang[f.id];
+    return lang == null || lang === '*' ? list : list.filter((p) => p[1] === lang);
+  };
+  function galBlock(f, kind, title, chipsHtml) {
+    const list = V.galleryList(f, kind);
+    if (!list.length && !chipsHtml) return '';
+    const show = A.state.galShow[f.id + ':' + kind] || GL_STEP;
+    const inUse = kind === 'logos' ? '' : (kind === 'posters' ? A.filmPosterPath(f) : A.filmBackdropPath(f));
+    const cells = list.slice(0, show).map((p, i) =>
+      '<button type="button" class="gthumb g-' + kind + (p[0] === inUse ? ' in-use' : '') + '" data-action="gal-open" data-film="' + esc(f.id) + '" data-kind="' + kind + '" data-i="' + i + '" aria-label="' + esc(t('gl_open') + ' ' + (i + 1)) + '">' +
+        '<img src="' + esc(A.tmdb.img(p[0], GL_SIZES[kind][0])) + '" alt="" loading="lazy" decoding="async">' +
+        (kind !== 'backdrops' ? '<span class="gtag">' + esc(langLabel(p[1])) + '</span>' : '') +
+        (p[0] === inUse ? '<span class="gcur">' + esc(t('gl_in_use')) + '</span>' : '') + '</button>').join('');
+    return '<section class="gal-block"><h3>' + esc(title) + ' <span class="fcount">' + list.length + '</span></h3>' + (chipsHtml || '') +
+      '<div class="gal-grid g-' + kind + '">' + cells + '</div>' +
+      (list.length > show ? '<p><button type="button" class="btn small ghost" data-action="gal-more" data-film="' + esc(f.id) + '" data-kind="' + kind + '">' + esc(t('gl_more')) + '</button></p>' : '') + '</section>';
+  }
+  function gallerySection(f) {
+    const head = '<div class="sec-head"><h2>' + esc(t('gl_title')) + '</h2><p class="sec-lead">' + esc(t('gl_lead')) + '</p></div>';
+    const wrap = (inner) => '<section class="sec gallery" id="sec-gallery">' + head + inner + '</section>';
+    if (A.tmdb.mode() === 'off') {
+      return wrap('<div class="gal-off"><h3>' + esc(t('gl_off_t')) + '</h3><p>' + esc(t('gl_off')) + '</p>' +
+        '<button type="button" class="btn primary" data-action="settings">' + esc(t('gl_open_settings')) + '</button></div>');
+    }
+    const g = A.gallery.get(f.tmdb);
+    if (!g || g.state === 'loading') return wrap('<p class="gal-wait" role="status">' + esc(t('gl_loading')) + '</p>');
+    if (g.state === 'error') return wrap('<div class="gal-off"><p>' + esc(t('gl_fail')) + '</p><button type="button" class="btn ghost" data-action="gal-retry" data-film="' + esc(f.id) + '">' + esc(t('gl_retry')) + '</button></div>');
+    const d = g.data;
+    if (!d.posters.length && !d.backdrops.length && !d.logos.length) return wrap('<p class="muted">' + esc(t('gl_empty')) + '</p>');
+    const langs = galLangs(f, d);
+    const cur = A.state.galLang[f.id] == null ? '*' : A.state.galLang[f.id];
+    const lchip = (code, label, n) => '<button type="button" class="fchip' + (code === cur ? ' on' : '') + '" aria-pressed="' + (code === cur) + '" data-action="gal-lang" data-film="' + esc(f.id) + '" data-lang="' + esc(code) + '">' + esc(label) + ' <span class="fcount">' + n + '</span></button>';
+    const chips = d.posters.length ? '<div class="fchips" role="group" aria-label="' + esc(t('gl_posters')) + '">' + lchip('*', t('gl_all'), d.posters.length) + langs.map((l) => lchip(l.code, langLabel(l.code), l.n)).join('') + '</div>' : '';
+    return wrap(galBlock(f, 'posters', t('gl_posters'), chips) + galBlock(f, 'backdrops', t('gl_backdrops')) + galBlock(f, 'logos', t('gl_logos')) +
+      '<p class="gal-credit muted">' + esc(t('gl_credit')) + '</p>');
+  }
+  V.lightbox = function (f, kind, i) {
+    const list = V.galleryList(f, kind);
+    const p = list[i];
+    if (!p) return '';
+    const sizes = GL_SIZES[kind];
+    const meta = [t(kind === 'posters' ? 'gl_poster' : kind === 'backdrops' ? 'gl_backdrop' : 'gl_logo'), kind !== 'backdrops' ? langLabel(p[1]) : '', p[2] && p[3] ? p[2] + '×' + p[3] : '', t('gl_of', { i: i + 1, n: list.length })].filter(Boolean).join(' · ');
+    const target = kind === 'posters' ? 'poster' : kind === 'backdrops' ? 'backdrop' : '';
+    const mine = A.covers.get(f.id);
+    const pinned = A.pins.get(f.id);
+    let actions = '';
+    if (target) {
+      actions += '<button type="button" class="btn small primary" data-action="gal-cover" data-film="' + esc(f.id) + '" data-target="' + target + '" data-path="' + esc(p[0]) + '">' + esc(t(target === 'poster' ? 'gl_use_cover' : 'gl_use_bg')) + '</button>';
+      if (mine.poster || mine.backdrop) actions += '<button type="button" class="btn small ghost" data-action="gal-reset" data-film="' + esc(f.id) + '">' + esc(t('gl_reset')) + '</button>';
+      if (A.isCurator()) {
+        const isPinned = pinned[target] === p[0];
+        actions += '<button type="button" class="btn small ghost" data-action="gal-pin" data-film="' + esc(f.id) + '" data-target="' + target + '" data-path="' + esc(isPinned ? '' : p[0]) + '">' + esc(t(isPinned ? 'gl_unpin' : 'gl_pin')) + '</button>';
+      }
+    }
+    actions += '<a class="btn small ghost" href="' + esc(A.tmdb.img(p[0], 'original')) + '" target="_blank" rel="noopener noreferrer">' + esc(t('gl_original')) + ICON.ext + '</a>';
+    return '<div class="lb-stage lb-' + kind + '"><img src="' + esc(A.tmdb.img(p[0], sizes[1])) + '" alt="' + esc(A.filmTitle(f) + ' — ' + meta) + '"></div>' +
+      '<div class="lb-bar"><div class="lb-nav">' +
+        '<button type="button" class="icon-btn" data-action="gal-step" data-dir="-1" aria-label="' + esc(t('prev')) + '"' + (i <= 0 ? ' disabled' : '') + '>' + ICON.left + '</button>' +
+        '<p class="lb-meta">' + esc(meta) + '</p>' +
+        '<button type="button" class="icon-btn" data-action="gal-step" data-dir="1" aria-label="' + esc(t('next')) + '"' + (i >= list.length - 1 ? ' disabled' : '') + '>' + ICON.right + '</button>' +
+      '</div><div class="lb-actions">' + actions + '</div></div>';
+  };
+
+  /* ---------------- página do filme (com abas) ---------------- */
+  const FILM_TABS = ['guia', 'versoes', 'lancamentos', 'galeria'];
+  V.SECTION_TAB = { 'sec-guide': 'guia', 'sec-score': 'guia', 'sec-timeline': 'versoes', 'sec-versions': 'versoes', 'sec-cuts': 'versoes', 'sec-dubs': 'versoes', 'sec-notes': 'versoes', 'sec-sources': 'versoes', 'sec-releases': 'lancamentos', 'sec-gallery': 'galeria' };
+  V.filmTabs = function (f) {
+    const hasGuide = f.guide.length || scoredVersions(f).length;
+    return FILM_TABS.filter((tb) => (tb === 'guia' ? hasGuide : tb === 'galeria' ? !!f.tmdb : true));
+  };
+  V.filmTab = function (f) {
+    const tabs = V.filmTabs(f);
+    const want = A.state.filmTab[f.id];
+    return tabs.indexOf(want) >= 0 ? want : tabs[0];
+  };
+  function tabLabel(f, tb) {
+    if (tb === 'guia') return '<span class="tl-long">' + esc(t('tab_guide')) + '</span><span class="tl-short">' + esc(t('tab_guide_short')) + '</span>';
+    if (tb === 'versoes') return esc(t('tab_versions')) + ' <span class="fcount">' + f.versions.length + '</span>';
+    if (tb === 'lancamentos') { const n = A.releasesOf(f).length; return esc(t('tab_releases')) + (n ? ' <span class="fcount">' + n + '</span>' : ''); }
+    return esc(t('tab_gallery'));
+  }
+  function filmPanel(f, tb) {
+    if (tb === 'guia') return guideSection(f) + scoreSection(f);
+    if (tb === 'lancamentos') return releasesSection(f);
+    if (tb === 'galeria') return gallerySection(f);
+    return timelineSection(f) + versionsSection(f) + cutsSection(f) + dubsSection(f) + notesSection(f) +
+      (f.wanted ? '<aside class="wanted-note"><h2>' + esc(t('fp_wanted')) + '</h2><p>' + esc(L(f.wanted)) + '</p><button class="btn small ghost" type="button" data-action="suggest" data-film="' + esc(f.id) + '" data-kind="version">' + esc(t('nav_suggest')) + '</button></aside>' : '') +
+      sourcesSection(f);
+  }
+
   V.film = function (f) {
     if (!f) return V.notFound();
     const title = A.filmTitle(f);
@@ -443,13 +689,17 @@
     const fan = f.versions.filter((v) => isFan(v.type)).length;
     const aka = f.aka ? (f.aka[A.lang] || []) : [];
     const showOriginal = f.original_title && A.fold(f.original_title) !== A.fold(title);
+    const tabs = V.filmTabs(f);
+    const tab = V.filmTab(f);
     return '<article class="film" style="' + art(f) + '">' +
       '<header class="film-hero">' +
         '<div class="hero-bg" aria-hidden="true">' + (bd ? '<img src="' + esc(bd) + '" alt="" decoding="async">' : '<span class="hero-year">' + esc(f.year) + '</span>') + '</div>' +
         '<div class="film-hero-inner">' +
-          '<div class="film-poster">' + (poster
+          '<div class="film-side"><div class="film-poster">' + (poster
             ? '<img src="' + esc(poster) + '" alt="' + esc(title) + '" decoding="async">'
             : '<span class="poster-label"><span class="pl-year">' + esc(f.year) + '</span><span class="pl-title">' + esc(title) + '</span><span class="pl-dir">' + esc(f.director || '') + '</span></span>') + '</div>' +
+            (!poster && f.tmdb && A.tmdb.mode() === 'off' ? '<button type="button" class="link-chip tmdb-hint" data-action="settings">' + esc(t('hero_tmdb_hint')) + '</button>' : '') +
+          '</div>' +
           '<div class="film-head">' +
             '<h1>' + esc(title) + '</h1>' +
             '<p class="meta"><span>' + esc(f.year) + '</span>' + (A.filmRuntime(f) ? '<span>' + esc(t('fp_runtime', { n: A.filmRuntime(f) })) + '</span>' : '') + (f.director ? '<span>' + esc(f.director) + '</span>' : '') + '</p>' +
@@ -462,21 +712,17 @@
               (f.dubs.length ? '<span>' + esc(A.plural(f.dubs.length, 'one_dub', 'n_dubs')) + '</span>' : '') +
             '</p>' +
             '<div class="actions">' +
-              (f.guide.length ? '<button class="btn primary" type="button" data-action="goto" data-target="sec-guide">' + esc(t('hero_cta_guide')) + '</button>' : '') +
+              (tabs.indexOf('guia') >= 0 ? '<button class="btn primary" type="button" data-action="goto" data-target="sec-guide">' + esc(t('hero_cta_guide')) + '</button>' : '') +
               '<button class="btn ghost" type="button" data-action="suggest" data-film="' + esc(f.id) + '" data-kind="version">' + esc(t('fp_suggest')) + '</button>' +
             '</div>' +
           '</div>' +
         '</div>' +
       '</header>' +
       (L(f.intro) ? '<section class="film-intro"><p>' + esc(L(f.intro)) + '</p></section>' : '') +
-      guideSection(f) +
-      timelineSection(f) +
-      versionsSection(f) +
-      cutsSection(f) +
-      dubsSection(f) +
-      notesSection(f) +
-      (f.wanted ? '<aside class="wanted-note"><h2>' + esc(t('fp_wanted')) + '</h2><p>' + esc(L(f.wanted)) + '</p><button class="btn small ghost" type="button" data-action="suggest" data-film="' + esc(f.id) + '" data-kind="version">' + esc(t('nav_suggest')) + '</button></aside>' : '') +
-      sourcesSection(f) +
+      '<nav class="film-tabs" id="film-tabs" aria-label="' + esc(t('tabs_label')) + '"><div class="film-tabs-inner" role="tablist">' +
+        tabs.map((tb) => '<button type="button" role="tab" class="ftab' + (tb === tab ? ' on' : '') + '" id="tab-' + tb + '" aria-selected="' + (tb === tab) + '" aria-controls="film-panel" tabindex="' + (tb === tab ? '0' : '-1') + '" data-action="film-tab" data-film="' + esc(f.id) + '" data-tab="' + tb + '">' + tabLabel(f, tb) + '</button>').join('') +
+      '</div></nav>' +
+      '<div class="film-panel" id="film-panel" role="tabpanel" aria-labelledby="tab-' + tab + '">' + filmPanel(f, tab) + '</div>' +
     '</article>';
   };
 
@@ -513,7 +759,12 @@
         TYPE_ORDER.map((tp) => '<div><dt>' + typeBadge(tp) + '</dt><dd>' + esc(t('typed_' + tp)) + '</dd></div>').join('') + '</dl></section>' +
       '<section class="sec"><h2>' + esc(t('ab_rec')) + '</h2><p>' + esc(t('ab_rec_lead')) + '</p><dl class="legend-list">' +
         REC_LEVELS.map((lv) => '<div><dt>' + recSeal({ level: lv }) + '</dt><dd>' + esc(t('recd_' + lv)) + '</dd></div>').join('') + '</dl></section>' +
+      '<section class="sec"><h2>' + esc(t('ab_score')) + '</h2><p>' + esc(t('ab_score_lead')) + '</p><dl class="legend-list">' +
+        CRITERIA.map((c) => '<div><dt><b>' + esc(t('sc_' + c)) + '</b></dt><dd>' + esc(t('scd_' + c)) + '</dd></div>').join('') + '</dl></section>' +
       '<section class="sec"><h2>' + esc(t('ab_dubs')) + '</h2><p>' + esc(t('ab_dubs_lead')) + '</p></section>' +
+      '<section class="sec"><h2>' + esc(t('ab_data')) + '</h2><p>' + esc(t('ab_data_lead')) + '</p>' +
+        '<p class="rel-more"><a href="https://www.blu-ray.com/" target="_blank" rel="noopener noreferrer">Blu-ray.com' + ICON.ext + '</a> ' +
+        '<a href="https://www.dvdcompare.net/" target="_blank" rel="noopener noreferrer">DVDCompare' + ICON.ext + '</a></p></section>' +
       '<section class="sec"><h2>' + esc(t('ab_contrib')) + '</h2><p>' + esc(t('ab_contrib_lead')) + '</p>' +
         '<button class="btn primary" type="button" data-action="suggest">' + esc(t('nav_suggest')) + '</button></section>' +
       '<section class="sec"><h2>' + esc(t('ab_policy')) + '</h2><p>' + esc(t('ab_policy_lead')) + '</p></section>' +

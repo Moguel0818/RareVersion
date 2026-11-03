@@ -32,7 +32,7 @@
  */
 window.AMR_CATALOG = {
   schema: 1,
-  updated: "2026-11-02",
+  updated: "2026-11-03",
 
   films: [
     /* ============================================================
@@ -88,6 +88,88 @@ window.AMR_CATALOG = {
             en: "Translation and song adaptation by Renato Rosenberg. Premiered in Brazil in January 1996. Lippiani died in 1997; from Toy Story 2 on, Woody was voiced by Marco Ribeiro." },
           src: ["ts_dub", "ts_dub2", "ts_lip"] }
       ],
+      releases: [
+        {
+          date: "1996-10-29",
+          country: "US",
+          format: "vhs",
+          label: "Walt Disney Home Video",
+          version: "ts-vhs-ld-1996",
+          note: { pt: "Também em LaserDisc; EUA e Canadá; sem extras.", en: "Also on LaserDisc; US and Canada; no extras." },
+          src: ["ts_wiki"]
+        },
+        {
+          date: "1996-12-18",
+          country: "US",
+          format: "ld",
+          label: "Walt Disney Home Video",
+          name: { pt: "Deluxe widescreen, 4 discos, THX", en: "Deluxe widescreen box, 4 discs, THX" },
+          version: "ts-vhs-ld-1996",
+          src: ["ts_wiki"]
+        },
+        {
+          date: "2000-10-17",
+          country: "US",
+          format: "dvd",
+          label: "Walt Disney",
+          name: { pt: "Ultimate Toy Box com Toy Story 2, 3 discos, THX", en: "Ultimate Toy Box with Toy Story 2, 3 discs, THX" },
+          version: "ts-dvd-2000",
+          src: ["ts_wiki"]
+        },
+        {
+          date: "2001-03-20",
+          country: "US",
+          format: "dvd",
+          label: "Walt Disney",
+          name: { pt: "Edição avulsa", en: "Standalone release" },
+          version: "ts-dvd-2000",
+          src: ["ts_wiki"]
+        },
+        {
+          date: "2005-09-06",
+          country: "US",
+          format: "dvd",
+          label: "Walt Disney",
+          name: { pt: "Edição de 10º aniversário, 2 discos", en: "10th Anniversary Edition, 2 discs" },
+          version: "ts-dvd-2005",
+          src: ["ts_wiki"]
+        },
+        {
+          date: "2010-03-23",
+          country: "US",
+          format: "bd",
+          label: "Disney / Pixar",
+          name: { pt: "Edição Especial, Blu-ray + DVD", en: "Special Edition, Blu-ray + DVD" },
+          version: "ts-bd-2010",
+          src: ["ts_wiki"]
+        },
+        {
+          date: "2011-11-01",
+          country: "US",
+          format: "3d",
+          label: "Disney / Pixar",
+          name: { pt: "Trilogia em 3D", en: "3D trilogy set" },
+          version: "ts-bd-2010",
+          src: ["ts_wiki"]
+        },
+        {
+          date: "2019-06-04",
+          country: "US",
+          format: "4k",
+          label: "Disney / Pixar",
+          name: { pt: "4K UHD + Blu-ray", en: "4K UHD + Blu-ray" },
+          version: "ts-uhd-2019",
+          src: ["ts_br4k"]
+        },
+        {
+          date: "2019-11-12",
+          country: "US",
+          format: "stream",
+          label: "Disney+",
+          version: "ts-disney-plus",
+          src: ["ts_ao"]
+        }
+      ],
       versions: [
         {
           id: "ts-cinema-1995", type: "theatrical",
@@ -124,10 +206,19 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "misto", note: { pt: "Valorizado como referência de cor entre as mídias oficiais, mas limitado pela resolução.", en: "Valued as a color reference among official media, but limited by resolution." } },
           availability: "out_of_print", best_for: ["colecionador"],
-          editions: [
-            { year: 1996, format: "VHS / LaserDisc", region: { pt: "EUA e Canadá", en: "US and Canada" }, label: "Walt Disney Home Video", note: { pt: "29/10/1996, sem extras", en: "Oct 29, 1996, no extras" } },
-            { year: 1996, format: "LaserDisc (4 discos)", region: { pt: "EUA", en: "US" }, label: "Walt Disney Home Video", note: { pt: "Deluxe widescreen com THX, 18/12/1996", en: "Deluxe widescreen box with THX, Dec 18, 1996" } }
-          ],
+          scores: {
+            fidelity: {
+              v: 3,
+              why: { pt: "Vieram da versão em película, com cores próximas às do cinema, mas com a resolução e o ruído do vídeo analógico.", en: "Sourced from the film version, with colors close to the theatrical ones, but with the resolution and noise of analog video." },
+              src: ["ts_wiki", "ts_cb", "ts_ao"]
+            },
+            picture: { v: 1, why: { pt: "Definição de VHS e LaserDisc.", en: "VHS and LaserDisc resolution." }, src: ["ts_wiki"] },
+            extras: {
+              v: 3,
+              why: { pt: "A caixa Deluxe de LaserDisc tem storyboards, story reels e comentário; o VHS não tem extras.", en: "The Deluxe LaserDisc box has storyboards, story reels and commentary; the VHS has no extras." },
+              src: ["ts_wiki"]
+            }
+          },
           src: ["ts_wiki", "ts_cb", "ts_ao"]
         },
         {
@@ -145,10 +236,23 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "misto", note: { pt: "Foi disco de demonstração por anos, mas hoje é lembrado por se afastar das cores originais.", en: "It was a demo disc for years, but today it is remembered for drifting from the original colors." } },
           availability: "out_of_print", best_for: [],
-          editions: [
-            { year: 2000, format: "DVD (3 discos)", region: { pt: "EUA", en: "US" }, label: "Walt Disney", note: { pt: "Ultimate Toy Box com Toy Story 2, 17/10/2000, THX", en: "Ultimate Toy Box with Toy Story 2, Oct 17, 2000, THX" } },
-            { year: 2001, format: "DVD", region: { pt: "EUA", en: "US" }, label: "Walt Disney", note: { pt: "Edição avulsa, 20/03/2001", en: "Standalone release, Mar 20, 2001" } }
-          ],
+          scores: {
+            fidelity: {
+              v: 2,
+              why: { pt: "Imagem direto do digital, limpa e sem grão, com cores diferentes das do cinema.", en: "Picture straight from the digital files, clean and grainless, with colors unlike the theatrical ones." },
+              src: ["ts_wiki", "ts_cb"]
+            },
+            picture: {
+              v: 3,
+              why: { pt: "Foi disco de demonstração por anos, com certificação THX; hoje fica limitado pela definição padrão.", en: "It was a demo disc for years, with THX certification; today it is limited by standard definition." },
+              src: ["ts_wiki", "ts_tt"]
+            },
+            extras: {
+              v: 4,
+              why: { pt: "Caixa com Toy Story 2 e um disco só de extras.", en: "A box set with Toy Story 2 and a disc of extras." },
+              src: ["ts_wiki"]
+            }
+          },
           src: ["ts_wiki", "ts_cb", "ts_tt"]
         },
         {
@@ -166,6 +270,23 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "bem_avaliado", note: { pt: "Lembrada por colecionadores como a edição que preserva os renders originais com mais qualidade.", en: "Remembered by collectors as the edition that best preserves the original renders." } },
           availability: "out_of_print", best_for: ["colecionador"],
+          scores: {
+            fidelity: {
+              v: 3,
+              why: { pt: "Última edição feita a partir dos renders de 1995, mas ainda com as cores do digital, não as da película.", en: "The last edition made from the 1995 renders, but still with the digital colors, not the film ones." },
+              src: ["ts_lmw", "ts_wiki"]
+            },
+            picture: {
+              v: 3,
+              why: { pt: "Citada em fóruns de preservação como a melhor fonte oficial do render original.", en: "Cited in preservation forums as the best official source of the original render." },
+              src: ["ts_lmw"]
+            },
+            extras: {
+              v: 4,
+              why: { pt: "Edição dupla com novos extras.", en: "A two-disc edition with new extras." },
+              src: ["ts_wiki"]
+            }
+          },
           src: ["ts_wiki", "ts_lmw"]
         },
         {
@@ -185,10 +306,18 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "aclamado", note: { pt: "Nota máxima de vídeo em análises técnicas (5/5 no Blu-ray.com).", en: "Top video marks in technical reviews (5/5 at Blu-ray.com)." } },
           availability: "check", best_for: ["imagem", "oficial"],
-          editions: [
-            { year: 2010, format: "Blu-ray + DVD", region: { pt: "EUA", en: "US" }, label: "Disney / Pixar", note: { pt: "Edição Especial, 23/03/2010", en: "Special Edition combo, Mar 23, 2010" } },
-            { year: 2011, format: "Blu-ray 3D", region: { pt: "EUA", en: "US" }, label: "Disney / Pixar", note: { pt: "Trilogia em 3D, 01/11/2011", en: "3D trilogy set, Nov 1, 2011" } }
-          ],
+          scores: {
+            fidelity: {
+              v: 3,
+              why: { pt: "Novo render em resolução maior: muito nítido, com cores mais próximas da película que o DVD e o streaming, porém mais frias e sem o visual de filme.", en: "A new render at higher resolution: very sharp, with colors closer to film than the DVD and streaming, but colder and without the film look." },
+              src: ["ts_ao", "ts_wiki"]
+            },
+            picture: {
+              v: 5,
+              why: { pt: "Nota máxima de vídeo em análises técnicas (5/5 no Blu-ray.com).", en: "Top video marks in technical reviews (5/5 at Blu-ray.com)." },
+              src: ["ts_tt3d", "ts_br4k"]
+            }
+          },
           src: ["ts_tt3d", "ts_ao", "ts_br4k", "ts_wiki"]
         },
         {
@@ -210,6 +339,19 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "bem_avaliado", note: { pt: "Melhora confiável sobre o Blu-ray, mas não drástica (vídeo 4/5 no Blu-ray.com).", en: "A reliable but not dramatic step up from the Blu-ray (video 4/5 at Blu-ray.com)." } },
           availability: "in_print", best_for: ["imagem"],
+          scores: {
+            fidelity: {
+              v: 2,
+              why: { pt: "Fonte 2K com HDR, que intensifica brancos e cores, e proporção 1.78:1 em vez da 1.85:1 do cinema.", en: "A 2K source with HDR that intensifies whites and colors, and a 1.78:1 ratio instead of the theatrical 1.85:1." },
+              src: ["ts_br4k", "ts_hddn"]
+            },
+            picture: {
+              v: 4,
+              why: { pt: "Melhora confiável sobre o Blu-ray, mas não drástica (vídeo 4/5 no Blu-ray.com); os serrilhados do render ficam mais visíveis.", en: "A solid but not drastic upgrade over the Blu-ray (video 4/5 at Blu-ray.com); render aliasing becomes more visible." },
+              src: ["ts_br4k", "ts_hddn"]
+            }
+          },
+          reviews: [{ src: "ts_br4k", label: "Blu-ray.com", scale: 5, video: 4 }],
           src: ["ts_br4k", "ts_hddn"]
         },
         {
@@ -227,6 +369,13 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "controverso", note: { pt: "Criticado por quem compara com as cópias 35mm.", en: "Criticized by those who compare it with the 35mm prints." } },
           availability: "streaming", best_for: [],
+          scores: {
+            fidelity: {
+              v: 1,
+              why: { pt: "Cores cruas, com verdes intensos que na película ficariam mais escuros, segundo a Animation Obsessive.", en: "Raw colors, with intense greens that would be darker on film, according to Animation Obsessive." },
+              src: ["ts_ao", "ts_cb"]
+            }
+          },
           src: ["ts_ao", "ts_cb"]
         },
         {
@@ -246,6 +395,18 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "bem_avaliado", note: { pt: "Muito elogiado nas comparações nas redes, com a ressalva de que cada scan tem sua própria cor.", en: "Widely praised in online comparisons, with the caveat that each scan has its own color." } },
           availability: "unofficial", best_for: ["fidelidade"],
+          scores: {
+            fidelity: {
+              v: 5,
+              why: { pt: "O mais perto do visual do cinema: cores mais quentes, grão e renders suavizados pela película. Cada scan tem sua cor, e nenhum reproduz exatamente a projeção de 1995.", en: "The closest to the theatrical look: warmer colors, grain and renders softened by film. Each scan has its own color, and none exactly reproduces the 1995 projection." },
+              src: ["ts_ao", "ts_cb"]
+            },
+            picture: {
+              v: 3,
+              why: { pt: "Varia de scan para scan e carrega o desgaste das cópias.", en: "Varies from scan to scan and carries the wear of the prints." },
+              src: ["ts_cb"]
+            }
+          },
           src: ["ts_ao", "ts_cb"]
         }
       ]
@@ -343,6 +504,97 @@ window.AMR_CATALOG = {
             en: "Made for Disney, translated by Guilherme Briggs. For Episode IV it only premiered in 2021, straight to Disney+, because of 20th Century Fox's rights to the film." },
           src: ["sw_dub", "sw_dub4"] }
       ],
+      releases: [
+        {
+          date: "1982-05",
+          country: "US",
+          format: "vhs",
+          label: "",
+          version: "sw-vhs-1982",
+          note: { pt: "Primeiro em locadoras; também em Betamax, LaserDisc e CED.", en: "Rental first; also on Betamax, LaserDisc and CED." },
+          src: ["sw_w1", "sw_htf"]
+        },
+        {
+          date: "1993-09-15",
+          country: "US",
+          format: "ld",
+          label: "",
+          name: { pt: "Caixa de 9 LaserDiscs CAV, remasterização THX", en: "9-disc CAV LaserDisc box, THX remaster" },
+          version: "sw-ld-1993",
+          src: ["sw_arch", "sw_w1"]
+        },
+        {
+          date: "1995-06-16",
+          country: "US",
+          format: "vhs",
+          label: "",
+          name: { pt: "VHS “Faces”, anunciado como a última vez do original em fita", en: "“Faces” VHS, billed as the last time for the original on tape" },
+          version: "sw-ld-1993",
+          src: ["sw_w1"]
+        },
+        {
+          date: "1997-08-26",
+          country: "US",
+          format: "vhs",
+          label: "",
+          name: { pt: "Edição Especial, widescreen ou pan & scan", en: "Special Edition, widescreen or pan & scan" },
+          version: "sw-se-1997",
+          src: ["sw_w1"]
+        },
+        {
+          date: "1997-11-26",
+          country: "US",
+          format: "ld",
+          label: "",
+          name: { pt: "Edição Especial", en: "Special Edition" },
+          version: "sw-se-1997",
+          src: ["sw_w1"]
+        },
+        {
+          date: "2004-09",
+          country: "US",
+          format: "dvd",
+          label: "20th Century Fox",
+          name: { pt: "Caixa da trilogia", en: "Trilogy box set" },
+          version: "sw-dvd-2004",
+          src: ["sw_w1"]
+        },
+        {
+          date: "2006-09-12",
+          country: "US",
+          format: "dvd",
+          label: "20th Century Fox",
+          name: { pt: "Edição limitada com o original como disco bônus", en: "Limited Edition with the original as a bonus disc" },
+          version: "sw-gout-2006",
+          src: ["sw_sv06", "sw_w1"]
+        },
+        {
+          date: "2011-09",
+          country: "US",
+          format: "bd",
+          label: "20th Century Fox",
+          name: { pt: "The Complete Saga", en: "The Complete Saga" },
+          version: "sw-bd-2011",
+          src: ["sw_w1"]
+        },
+        {
+          date: "2019-11-12",
+          country: "US",
+          format: "stream",
+          label: "Disney+",
+          version: "sw-uhd-2019",
+          src: ["sw_wdw"]
+        },
+        {
+          date: "2020-03-31",
+          country: "US",
+          format: "4k",
+          label: "Disney / Lucasfilm",
+          name: { pt: "4K UHD + Blu-ray", en: "4K UHD + Blu-ray" },
+          version: "sw-uhd-2019",
+          src: ["sw_tt4k", "sw_w1"]
+        }
+      ],
       versions: [
         {
           id: "sw-cinema-1977", type: "theatrical",
@@ -379,6 +631,23 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "misto", note: { pt: "Valor histórico e nostálgico; imagem fraca para os padrões atuais.", en: "Historic and nostalgic value; weak picture by today's standards." } },
           availability: "out_of_print", best_for: ["colecionador"],
+          scores: {
+            fidelity: {
+              v: 2,
+              why: { pt: "Montagem original, mas com laterais cortadas nas edições em tela cheia; LaserDisc e CED de 1985 rodam 3% mais rápido.", en: "The original cut, but with the sides cropped in full-screen editions; the 1985 LaserDisc and CED run 3% fast." },
+              src: ["sw_w1", "sw_htf"]
+            },
+            picture: {
+              v: 1,
+              why: { pt: "Imagem fraca para os padrões atuais.", en: "Weak picture by today's standards." },
+              src: ["sw_htf"]
+            },
+            audio: {
+              v: 2,
+              why: { pt: "Desde 1985, uma mixagem que junta trechos das três mixagens de 1977.", en: "Since 1985, a mix combining parts of the three 1977 mixes." },
+              src: ["sw_w1"]
+            }
+          },
           src: ["sw_w1", "sw_htf"]
         },
         {
@@ -397,6 +666,19 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "bem_avaliado", note: { pt: "Referência em definição padrão para o original até hoje.", en: "Still the standard-definition reference for the original." } },
           availability: "out_of_print", best_for: ["colecionador"],
+          scores: {
+            fidelity: {
+              v: 3,
+              why: { pt: "Montagem original com os ajustes de 1981, mas com limpeza digital e cores diferentes das do cinema.", en: "The original cut with the 1981 tweaks, but with digital cleanup and colors unlike the theatrical ones." },
+              src: ["sw_w1", "sw_arch"]
+            },
+            picture: {
+              v: 2,
+              why: { pt: "Referência em definição padrão para o original até hoje.", en: "Still the standard-definition reference for the original." },
+              src: ["sw_arch", "sw_sv"]
+            },
+            audio: { v: 3, why: { pt: "Nova mixagem THX.", en: "A new THX mix." }, src: ["sw_arch"] }
+          },
           src: ["sw_w1", "sw_arch", "sw_sv"]
         },
         {
@@ -414,6 +696,13 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "controverso", note: { pt: "Sucesso de bilheteria, mas as alterações dividem os fãs até hoje.", en: "A box-office hit, but its changes still divide fans." } },
           availability: "out_of_print", best_for: [],
+          scores: {
+            fidelity: {
+              v: 1,
+              why: { pt: "Acrescenta cenas e efeitos digitais; Greedo passa a atirar primeiro.", en: "Adds digital scenes and effects; Greedo now shoots first." },
+              src: ["sw_w1"]
+            }
+          },
           src: ["sw_w1", "sw_htf"]
         },
         {
@@ -431,6 +720,18 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "controverso", note: { pt: "A nova cor e as alterações provocaram protestos, que levaram à edição de 2006 com o original.", en: "The new color and changes sparked protests that led to the 2006 edition with the original." } },
           availability: "out_of_print", best_for: [],
+          scores: {
+            fidelity: {
+              v: 1,
+              why: { pt: "Mais mudanças e uma correção de cor que provocou forte reação dos fãs.", en: "More changes and a color correction that drew a strong fan backlash." },
+              src: ["sw_w1", "sw_sv"]
+            },
+            picture: {
+              v: 3,
+              why: { pt: "Imagem limpa para um DVD, mas com cores muito diferentes das do cinema.", en: "A clean picture for a DVD, but with colors very different from the theatrical ones." },
+              src: ["sw_sv"]
+            }
+          },
           src: ["sw_w1", "sw_sv"]
         },
         {
@@ -448,6 +749,19 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "misto", note: { pt: "Celebrado por existir, criticado pela qualidade (vídeo 2/5 na Sound & Vision).", en: "Celebrated for existing, criticized for its quality (video 2/5 at Sound & Vision)." } },
           availability: "out_of_print", best_for: ["colecionador"],
+          scores: {
+            fidelity: {
+              v: 3,
+              why: { pt: "É a montagem original de cinema, mas a imagem vem de um master de 1993 com limpeza digital.", en: "It is the original theatrical cut, but the picture comes from a 1993 master with digital cleanup." },
+              src: ["sw_w1", "sw_sv06"]
+            },
+            picture: {
+              v: 1,
+              why: { pt: "Não anamórfica, o que derruba a definição em TVs widescreen (vídeo 2/5 na Sound & Vision).", en: "Non-anamorphic, which cuts the resolution on widescreen TVs (video 2/5 at Sound & Vision)." },
+              src: ["sw_sv06", "sw_sv"]
+            }
+          },
+          reviews: [{ src: "sw_sv06", label: "Sound & Vision", scale: 5, video: 2 }],
           src: ["sw_sv", "sw_sv06", "sw_w1"]
         },
         {
@@ -466,6 +780,23 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "controverso", note: { pt: "Áudio elogiado; cores e alterações criticadas.", en: "Audio praised; colors and alterations criticized." } },
           availability: "out_of_print", best_for: [],
+          scores: {
+            fidelity: {
+              v: 1,
+              why: { pt: "Novas alterações (sabre azul, pedras na caverna de R2-D2) e cores muito saturadas.", en: "New changes (blue lightsaber, rocks in R2-D2's cave) and heavily saturated colors." },
+              src: ["sw_w1", "sw_sv"]
+            },
+            picture: {
+              v: 3,
+              why: { pt: "Primeira vez em HD, mas com saturação exagerada.", en: "The first time in HD, but oversaturated." },
+              src: ["sw_sv", "sw_tt4k"]
+            },
+            audio: {
+              v: 5,
+              why: { pt: "Áudio DTS-HD MA 6.1 muito elogiado.", en: "Highly praised DTS-HD MA 6.1 audio." },
+              src: ["sw_sv"]
+            }
+          },
           src: ["sw_w1", "sw_sv", "sw_tt4k"]
         },
         {
@@ -489,6 +820,24 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "bem_avaliado", note: { pt: "Imagem muito elogiada (vídeo B+ na The Digital Bits), mas a montagem segue alterada.", en: "Picture widely praised (video B+ at The Digital Bits), but the cut remains altered." } },
           availability: "in_print", best_for: ["imagem", "oficial"], dubs: ["sw-dub-2015"],
+          scores: {
+            fidelity: {
+              v: 1,
+              why: { pt: "Traz a montagem mais alterada de todas, incluindo o “Maclunkey” de Greedo.", en: "It has the most altered cut of all, including Greedo's “Maclunkey”." },
+              src: ["sw_w1", "sw_wdw"]
+            },
+            picture: {
+              v: 5,
+              why: { pt: "Para várias análises, a melhor imagem que o filme já teve em casa (vídeo B+ na The Digital Bits).", en: "For several reviewers, the best picture the film has had at home (video B+ at The Digital Bits)." },
+              src: ["sw_db4k", "sw_tt4k"]
+            },
+            audio: {
+              v: 3,
+              why: { pt: "Nova mixagem em Dolby Atmos; as mixagens de 1977 não estão no disco.", en: "A new Dolby Atmos mix; the 1977 mixes are not on the disc." },
+              src: ["sw_db4k", "sw_w1"]
+            }
+          },
+          reviews: [{ src: "sw_db4k", label: "The Digital Bits", video: "B+" }],
           src: ["sw_db4k", "sw_tt4k", "sw_wdw", "sw_mc", "sw_w1"]
         },
         {
@@ -506,6 +855,18 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "bem_avaliado", note: { pt: "Recebida como a primeira versão em HD a partir de uma única cópia.", en: "Received as the first HD version from a single print." } },
           availability: "unofficial", best_for: [],
+          scores: {
+            fidelity: {
+              v: 4,
+              why: { pt: "Restauração de uma única cópia 35mm, sem misturar fontes, com grão de película.", en: "A restoration of a single 35mm print, with no mixing of sources, and film grain." },
+              src: ["sw_ssett", "sw_ssepl"]
+            },
+            picture: {
+              v: 3,
+              why: { pt: "Em 1080p, com as limitações da cópia; depois superada pelo 4K77.", en: "In 1080p, with the print's limitations; later surpassed by 4K77." },
+              src: ["sw_ssepl"]
+            }
+          },
           src: ["sw_ssett", "sw_ssepl"]
         },
         {
@@ -524,6 +885,18 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "aclamado", note: { pt: "Para muitos fãs, a experiência mais próxima do cinema de 1977.", en: "For many fans, the experience closest to the 1977 theater." } },
           availability: "unofficial", best_for: ["fidelidade"],
+          scores: {
+            fidelity: {
+              v: 5,
+              why: { pt: "Escaneado em 4K direto de uma cópia de 1977, com montagem original, grão e cores de época.", en: "Scanned in 4K straight from a 1977 print, with the original cut, grain and period colors." },
+              src: ["sw_w2", "sw_eng"]
+            },
+            picture: {
+              v: 4,
+              why: { pt: "Resolução real de 4K, com as marcas naturais de uma cópia de cinema.", en: "True 4K resolution, with the natural marks of a theatrical print." },
+              src: ["sw_eng"]
+            }
+          },
           src: ["sw_w2", "sw_eng"]
         },
         {
@@ -541,6 +914,18 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "aclamado", note: { pt: "Muito elogiada; alguns críticos lembram que é uma reconstrução, não uma preservação pura.", en: "Widely praised; some critics note it is a reconstruction, not a pure preservation." } },
           availability: "unofficial", best_for: [],
+          scores: {
+            fidelity: {
+              v: 3,
+              why: { pt: "Desfaz as alterações quadro a quadro, mas é uma reconstrução que mistura dezenas de fontes, algumas de menor resolução.", en: "Undoes the changes frame by frame, but it is a reconstruction mixing dozens of sources, some of lower resolution." },
+              src: ["sw_w2", "sw_vice"]
+            },
+            picture: {
+              v: 4,
+              why: { pt: "Imagem limpa e moderna, com cor corrigida.", en: "A clean, modern picture with corrected color." },
+              src: ["sw_w2", "sw_upx"]
+            }
+          },
           src: ["sw_w2", "sw_vice", "sw_upx"]
         },
         {
@@ -558,6 +943,18 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "aclamado", note: { pt: "Avaliações altíssimas no IFDB (fanedit.org).", en: "Very high ratings on the IFDB (fanedit.org)." } },
           availability: "unofficial", best_for: [],
+          scores: {
+            fidelity: {
+              v: 2,
+              why: { pt: "Não busca o original: é uma nova versão a partir da Edição Especial de 2004.", en: "It does not aim for the original: it is a new version built from the 2004 Special Edition." },
+              src: ["sw_rev"]
+            },
+            picture: {
+              v: 3,
+              why: { pt: "Cor e falhas corrigidas e efeitos refeitos sobre a base de 2004.", en: "Color and flaws fixed and effects redone on the 2004 base." },
+              src: ["sw_rev"]
+            }
+          },
           src: ["sw_rev", "sw_rev2"]
         },
         {
@@ -603,6 +1000,9 @@ window.AMR_CATALOG = {
         en: "The Chiodo brothers' cult film barely played in theaters and became a classic on video. Its release history is one of upgrades: from VHS and LaserDisc to MGM's DVD, up to the 4K restoration from the original negative made for Arrow Video in 2018, and Scream Factory's 4K UHD in 2024."
       },
       guide: [
+        { need: "fidelidade", version: "kk-bd-arrow-2018", why: {
+          pt: "Restauração do negativo em SDR e estéreo original sem compressão: é a edição que menos reinterpreta o filme de 1988.",
+          en: "A restoration of the negative in SDR with the original uncompressed stereo: the edition that reinterprets the 1988 film the least." } },
         { need: "imagem", version: "kk-uhd-scream-2024", why: {
           pt: "4K do negativo original com Dolby Vision. O áudio é o ponto mais fraco apontado nas análises.",
           en: "4K from the original negative with Dolby Vision. Audio is the weak spot reviewers point out." } },
@@ -626,6 +1026,206 @@ window.AMR_CATALOG = {
         pt: "Procura-se: scans de cópias 35mm e dados da dublagem brasileira e dos VHS lançados no Brasil.",
         en: "Wanted: 35mm print scans and details on the Brazilian dub and Brazilian VHS releases."
       },
+      links: {
+        bluray: "https://www.blu-ray.com/Killer-Klowns-from-Outer-Space/132093/",
+        dvdcompare: "https://www.dvdcompare.net/comparisons/film.php?fid=20970"
+      },
+      score_note: { pt: "Arrow (2018) e Scream Factory (2024) partem, ao que tudo indica, do mesmo scan 4K do negativo. A diferença está no acabamento: a Arrow é SDR, com o estéreo original sem compressão; a Scream tem 4K com HDR e um 5.1 criticado.", en: "Arrow (2018) and Scream Factory (2024) apparently start from the same 4K scan of the negative. The difference is in the finish: Arrow is SDR with the original uncompressed stereo; Scream has 4K with HDR and a criticized 5.1." },
+      releases: [
+        {
+          date: "2001-08-28",
+          country: "US",
+          format: "dvd",
+          label: "MGM",
+          name: { pt: "Midnite Movies, edição especial", en: "Midnite Movies Special Edition" },
+          version: "kk-dvd-2001",
+          specs: "16:9 · Dolby Digital 2.0",
+          src: ["kk_brdvd"]
+        },
+        {
+          date: "2012-09-11",
+          country: "US",
+          format: "bd",
+          label: "MGM",
+          version: "kk-bd-mgm-2012",
+          specs: { pt: "1080p · DTS-HD MA 2.0 · região livre", en: "1080p · DTS-HD MA 2.0 · region free" },
+          src: ["kk_br12", "kk_dvdc"]
+        },
+        {
+          date: "2012",
+          country: "CA",
+          format: "bd",
+          label: "MGM / 20th Century Fox",
+          version: "kk-bd-mgm-2012",
+          note: { pt: "Edição canadense, igual à americana.", en: "Canadian edition, same as the US one." },
+          src: ["kk_dvdc"]
+        },
+        {
+          date: "",
+          country: "US",
+          format: "bd",
+          label: "MGM",
+          name: { pt: "Steelbook", en: "SteelBook" },
+          version: "kk-bd-mgm-2012",
+          src: ["kk_dvdc"],
+          src_urls: ["https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-Blu-ray/218230/"]
+        },
+        {
+          date: "",
+          country: "US",
+          format: "bd",
+          label: "MGM (Walmart)",
+          name: { pt: "Capa de Halloween (faceplate)", en: "Halloween faceplate" },
+          version: "kk-bd-mgm-2012",
+          src: ["kk_dvdc"],
+          src_urls: ["https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-with-Halloween-FP-Blu-ray/111057/"]
+        },
+        {
+          date: "",
+          country: "US",
+          format: "bd",
+          label: "MGM",
+          name: { pt: "4 cartões da Mondo e ingresso de Alien: Covenant", en: "4 Mondo cards and Alien: Covenant movie cash" },
+          version: "kk-bd-mgm-2012",
+          version_sure: false,
+          src_urls: ["https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-Blu-ray/178170/"]
+        },
+        {
+          date: "2014-09-15",
+          country: "GB",
+          format: "bd",
+          label: "Arrow Video",
+          name: { pt: "Blu-ray + DVD", en: "Blu-ray + DVD" },
+          version: "kk-bd-arrow-2014",
+          specs: { pt: "1080p · LPCM 2.0 · região B", en: "1080p · LPCM 2.0 · region B" },
+          src: ["kk_br14p", "kk_br14"]
+        },
+        {
+          date: "2014-09-15",
+          country: "GB",
+          format: "bd",
+          label: "Arrow Video",
+          name: { pt: "Steelbook limitado", en: "Limited Edition SteelBook" },
+          version: "kk-bd-arrow-2014",
+          src: ["kk_hcf14"],
+          src_urls: ["https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-Blu-ray/104501/"]
+        },
+        {
+          date: "",
+          country: "GB",
+          format: "bd",
+          label: "Arrow Video / EverythingBlu",
+          name: { pt: "Blu Pick Series BPS001 (steelbook)", en: "Blu Pick Series BPS001 (SteelBook)" },
+          version: "kk-bd-arrow-2014",
+          version_sure: false,
+          src_urls: ["https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-Blu-ray/150154/"]
+        },
+        {
+          date: "2018-04-09",
+          country: "GB",
+          format: "bd",
+          label: "Arrow Video",
+          name: { pt: "Edição especial, restauração 4K", en: "Special Edition, 4K restoration" },
+          version: "kk-bd-arrow-2018",
+          specs: { pt: "1080p · DTS-HD MA 5.1 · LPCM 2.0 · região B", en: "1080p · DTS-HD MA 5.1 · LPCM 2.0 · region B" },
+          src: ["kk_ff18", "kk_dvdc"],
+          src_urls: ["https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-Blu-ray/195433/"]
+        },
+        {
+          date: "2018-04-24",
+          country: "US",
+          format: "bd",
+          label: "Arrow Video",
+          name: { pt: "Edição especial, restauração 4K", en: "Special Edition, 4K restoration" },
+          version: "kk-bd-arrow-2018",
+          specs: { pt: "1080p · DTS-HD MA 5.1 · LPCM 2.0 · regiões A e B", en: "1080p · DTS-HD MA 5.1 · LPCM 2.0 · regions A and B" },
+          note: { pt: "A primeira tiragem veio com luva, capa reversível e livreto.", en: "The first pressing came with a slipcover, reversible sleeve and booklet." },
+          src: ["kk_br18", "kk_dvdc"]
+        },
+        {
+          date: "2018",
+          country: "CA",
+          format: "bd",
+          label: "Arrow Video",
+          version: "kk-bd-arrow-2018",
+          src: ["kk_dvdc"]
+        },
+        {
+          date: "2019-10-24",
+          country: "DE",
+          format: "bd",
+          label: "Koch Media",
+          name: { pt: "Mediabook Blu-ray + DVD", en: "Mediabook Blu-ray + DVD" },
+          version: "kk-bd-arrow-2018",
+          version_sure: false,
+          specs: { pt: "Áudio alemão em DTS-HD MA 5.1", en: "German audio in DTS-HD MA 5.1" },
+          note: { pt: "Anunciado com novo scan 4K; a origem do master não foi confirmada.", en: "Announced with a new 4K scan; the master's origin is unconfirmed." },
+          src: ["kk_ad19"]
+        },
+        {
+          date: "2022-11-10",
+          country: "DE",
+          format: "bd",
+          label: "Plaion Pictures",
+          name: { pt: "Mediabook Blu-ray + DVD, capa B (exclusivo da Amazon)", en: "Mediabook Blu-ray + DVD, cover B (Amazon exclusive)" },
+          version: "kk-bd-arrow-2018",
+          version_sure: false,
+          src: ["kk_ad22"]
+        },
+        {
+          date: "2024-05-14",
+          country: "US",
+          format: "4k",
+          label: "Scream Factory",
+          name: { pt: "35th Anniversary Edition, 4K UHD + Blu-ray", en: "35th Anniversary Edition, 4K UHD + Blu-ray" },
+          version: "kk-uhd-scream-2024",
+          specs: "2160p · Dolby Vision / HDR10 · DTS-HD MA 5.1 + 2.0",
+          src: ["kk_br4k", "kk_dvdc"]
+        },
+        {
+          date: "2024-05-14",
+          country: "US",
+          format: "4k",
+          label: "Scream Factory",
+          name: { pt: "Steelbook limitado, 4K UHD + Blu-ray", en: "Limited Edition SteelBook, 4K UHD + Blu-ray" },
+          version: "kk-uhd-scream-2024",
+          src: ["kk_br4ks"]
+        },
+        {
+          date: "2024-05-14",
+          country: "CA",
+          format: "4k",
+          label: "Shout! Studios",
+          name: { pt: "35th Anniversary Edition", en: "35th Anniversary Edition" },
+          version: "kk-uhd-scream-2024",
+          src: ["kk_dvdc"]
+        },
+        {
+          date: "2024-10-28",
+          country: "GB",
+          format: "bd",
+          label: "Final Cut Entertainment",
+          note: { pt: "Edição simples, região B; a origem do master não foi informada.", en: "Standard edition, region B; the master's origin wasn't stated." },
+          src: ["kk_hmv24"],
+          src_urls: ["https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-Blu-ray/367868/"]
+        },
+        {
+          date: "",
+          country: "US",
+          format: "digital",
+          label: "iTunes, Google Play, Prime Video, Vudu",
+          src: ["kk_brt"]
+        },
+        {
+          date: "",
+          country: "BR",
+          format: "stream",
+          label: "Prime Video",
+          name: { pt: "Como “Palhaços Assassinos do Espaço Sideral”", en: "As “Palhaços Assassinos do Espaço Sideral”" },
+          note: { pt: "No catálogo em 2025, segundo o Omelete.", en: "In the catalog in 2025, according to Omelete." },
+          src: ["kk_om25"]
+        }
+      ],
       versions: [
         {
           id: "kk-cinema-1988", type: "theatrical",
@@ -653,12 +1253,24 @@ window.AMR_CATALOG = {
           differences: [],
           reception: { level: "misto", note: { pt: "Valor nostálgico; imagem bem inferior às edições posteriores.", en: "Nostalgic value; picture far below later editions." } },
           availability: "out_of_print", best_for: ["colecionador"],
+          scores: {
+            fidelity: {
+              v: 2,
+              why: { pt: "Transferências antigas em definição padrão, bem abaixo do que o negativo guarda.", en: "Old standard-definition transfers, far below what the negative holds." },
+              src: ["kk_md"]
+            },
+            picture: {
+              v: 1,
+              why: { pt: "Imagem de VHS e LaserDisc, superada já pelo DVD de 2001.", en: "VHS and LaserDisc picture, already surpassed by the 2001 DVD." },
+              src: ["kk_md"]
+            }
+          },
           src: ["kk_md", "kk_db18"]
         },
         {
           id: "kk-dvd-2001", type: "official",
           name: { pt: "DVD MGM “Midnite Movies” (2001)", en: "MGM “Midnite Movies” DVD (2001)" },
-          by: "MGM Home Entertainment", released: "2001", cut: "theatrical",
+          by: "MGM Home Entertainment", released: "2001-08-28", cut: "theatrical",
           source: { pt: "Nova transferência da MGM", en: "New MGM transfer" },
           res: "SD", aspect: "1.85:1 (16:9)", formats: ["DVD"],
           summary: {
@@ -669,12 +1281,34 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "bem_avaliado", note: { pt: "Muito bem recebido na época.", en: "Very well received at the time." } },
           availability: "out_of_print", best_for: [],
+          scores: {
+            fidelity: {
+              v: 3,
+              why: { pt: "Primeira transferência caprichada, em widescreen 1.85:1 anamórfico; o diálogo sai um pouco de sincronia perto dos 17 minutos.", en: "The first proper transfer, in anamorphic 1.85:1 widescreen; dialogue drifts slightly out of sync around the 17-minute mark." },
+              src: ["kk_md", "kk_brdvd", "kk_de"]
+            },
+            picture: {
+              v: 2,
+              why: { pt: "Boa para um DVD da época, limitada pela definição padrão.", en: "Good for a DVD of its time, limited by standard definition." },
+              src: ["kk_md"]
+            },
+            audio: {
+              v: 2,
+              why: { pt: "Dolby Digital 2.0, com o mesmo problema de sincronia.", en: "Dolby Digital 2.0, with the same sync issue." },
+              src: ["kk_brdvd", "kk_de"]
+            },
+            extras: {
+              v: 4,
+              why: { pt: "Comentário dos irmãos Chiodo e documentários sobre produção e efeitos, reaproveitados por quase todas as edições seguintes.", en: "The Chiodo brothers' commentary and featurettes on the production and effects, reused by nearly every later edition." },
+              src: ["kk_md"]
+            }
+          },
           src: ["kk_md", "kk_de"]
         },
         {
           id: "kk-bd-mgm-2012", type: "official",
           name: { pt: "Blu-ray MGM (2012)", en: "MGM Blu-ray (2012)" },
-          by: "MGM", released: "2012", cut: "theatrical",
+          by: "MGM", released: "2012-09-11", cut: "theatrical",
           source: { pt: "Master antigo da MGM em HD", en: "MGM's older HD master" },
           res: "1080p", aspect: "1.85:1", formats: ["Blu-ray"],
           summary: {
@@ -685,6 +1319,29 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "misto", note: { pt: "Superado pelas edições da Arrow.", en: "Surpassed by Arrow's editions." } },
           availability: "out_of_print", best_for: [],
+          scores: {
+            fidelity: {
+              v: 3,
+              why: { pt: "Master antigo da MGM, com sujeira de cópia e pretos fracos; abre com o logo da MGM e repete o problema de sincronia do DVD.", en: "MGM's older master, with print damage and weak blacks; it opens with the MGM logo and repeats the DVD's sync issue." },
+              src: ["kk_br12", "kk_dvdc"]
+            },
+            picture: {
+              v: 3,
+              why: { pt: "Boa granulação e cores vivas para um master antigo (vídeo 4/5 no Blu-ray.com), mas superado pelo scan 4K.", en: "Good grain and vivid color for an old master (video 4/5 at Blu-ray.com), but surpassed by the 4K scan." },
+              src: ["kk_br12", "kk_mc12"]
+            },
+            audio: {
+              v: 2,
+              why: { pt: "DTS-HD MA 2.0 limpo, mas básico, com a falha de sincronia entre 17 e 18 minutos (áudio 2,5/5 no Blu-ray.com).", en: "Clean but basic DTS-HD MA 2.0, with the sync flaw between 17 and 18 minutes (audio 2.5/5 at Blu-ray.com)." },
+              src: ["kk_br12", "kk_tb12"]
+            },
+            extras: {
+              v: 4,
+              why: { pt: "Traz os extras do DVD de 2001 (extras 4,5/5 no Blu-ray.com).", en: "Carries over the 2001 DVD extras (extras 4.5/5 at Blu-ray.com)." },
+              src: ["kk_br12"]
+            }
+          },
+          reviews: [{ src: "kk_br12", label: "Blu-ray.com", date: "2012-09-13", scale: 5, video: 4, audio: 2.5, extras: 4.5 }],
           src: ["kk_de", "kk_dvdt", "kk_md"]
         },
         {
@@ -700,23 +1357,71 @@ window.AMR_CATALOG = {
           differences: [],
           reception: { level: "bem_avaliado", note: { pt: "Elogiada pelos extras; imagem igual à das edições MGM.", en: "Praised for its extras; picture identical to the MGM editions." } },
           availability: "out_of_print", best_for: [],
+          scores: {
+            fidelity: {
+              v: 3,
+              why: { pt: "Reaproveita o master da MGM; a imagem é a mesma das edições anteriores.", en: "Reuses MGM's master; the picture matches the earlier editions." },
+              src: ["kk_br14", "kk_dbrb"]
+            },
+            picture: {
+              v: 3,
+              why: { pt: "Mesma imagem do Blu-ray da MGM.", en: "Same picture as the MGM Blu-ray." },
+              src: ["kk_br14", "kk_md"]
+            },
+            audio: {
+              v: 3,
+              why: { pt: "Estéreo 2.0 original em PCM sem compressão. Não achamos análise que confirme se a falha de sincronia foi corrigida.", en: "Original 2.0 stereo in uncompressed PCM. We found no review confirming whether the sync flaw was fixed." },
+              src: ["kk_br14p", "kk_br14"]
+            },
+            extras: {
+              v: 4,
+              why: { pt: "Os extras da MGM mais entrevistas novas, um passeio pelo estúdio dos Chiodo e livreto.", en: "MGM's extras plus new interviews, a tour of the Chiodo studio and a booklet." },
+              src: ["kk_dvdc", "kk_hcf14"]
+            }
+          },
           src: ["kk_br14", "kk_md", "kk_dbrb"]
         },
         {
           id: "kk-bd-arrow-2018", type: "official",
           name: { pt: "Blu-ray Arrow Video (2018), restauração 4K", en: "Arrow Video Blu-ray (2018), 4K restoration" },
-          by: "Arrow Video", released: "2018-03", cut: "theatrical",
+          by: "Arrow Video", released: "2018-04-09", cut: "theatrical",
           source: { pt: "Nova restauração a partir de scan 4K do negativo original da câmera", en: "New restoration from a 4K scan of the original camera negative" },
           res: "1080p", aspect: "1.85:1", formats: ["Blu-ray", "DVD"],
           audio: [{ pt: "DTS-HD MA 5.1 e estéreo, remasterizados", en: "Remastered DTS-HD MA 5.1 and stereo" }],
           summary: {
-            pt: "A grande virada: scan 4K do negativo original, com mais detalhe e cor, abertura com o logo original da Trans World Entertainment e cerca de cinco horas de extras. Saiu em março (Reino Unido) e abril (EUA) de 2018.",
-            en: "The big turning point: a 4K scan of the original negative, with more detail and color, the original Trans World Entertainment logo and about five hours of extras. Released in March (UK) and April (US) 2018." },
+            pt: "A grande virada: scan 4K do negativo original, com mais detalhe e cor, abertura com o logo original da Trans World Entertainment e cerca de cinco horas de extras. Saiu em abril de 2018, no dia 9 no Reino Unido e no dia 24 nos EUA.",
+            en: "The big turning point: a 4K scan of the original negative, with more detail and color, the original Trans World Entertainment logo and about five hours of extras. Released in April 2018: on the 9th in the UK and the 24th in the US." },
           differences: [
             { pt: "Restauração exclusiva da Arrow na época", en: "Arrow-exclusive restoration at the time" }
           ],
           reception: { level: "aclamado", note: { pt: "Tratada como a edição definitiva em HD (vídeo nota A na The Digital Bits).", en: "Treated as the definitive HD edition (video A at The Digital Bits)." } },
           availability: "check", best_for: ["colecionador"],
+          scores: {
+            fidelity: {
+              v: 5,
+              why: { pt: "Restauração a partir de scan 4K do negativo original, em SDR, com o estéreo original em PCM e o logo da Trans World. Para fidelidade ao lançamento de 1988, é a opção mais segura.", en: "A restoration from a 4K scan of the original negative, in SDR, with the original stereo in PCM and the Trans World logo. For fidelity to the 1988 release, it is the safest pick." },
+              src: ["kk_br18", "kk_dvdc", "kk_db18"]
+            },
+            picture: {
+              v: 4,
+              why: { pt: "Salto claro de detalhe sobre o Blu-ray da MGM, cores mais quentes e grão natural (vídeo 5/5 no Blu-ray.com). Fica abaixo só do 4K.", en: "A clear jump in detail over the MGM Blu-ray, warmer color and natural grain (video 5/5 at Blu-ray.com). Only the 4K tops it." },
+              src: ["kk_br18", "kk_mc18"]
+            },
+            audio: {
+              v: 4,
+              why: { pt: "Estéreo LPCM 2.0 limpo e um 5.1 que usa pouco os canais traseiros (áudio 4/5 no Blu-ray.com).", en: "Clean LPCM 2.0 stereo and a 5.1 that uses the rear channels sparingly (audio 4/5 at Blu-ray.com)." },
+              src: ["kk_br18", "kk_mc18"]
+            },
+            extras: {
+              v: 5,
+              why: { pt: "Cerca de cinco horas de extras, incluindo os curtas antigos dos Chiodo (extras 5/5 no Blu-ray.com).", en: "About five hours of extras, including the Chiodos' early shorts (extras 5/5 at Blu-ray.com)." },
+              src: ["kk_br18", "kk_dvdc"]
+            }
+          },
+          reviews: [
+            { src: "kk_br18", label: "Blu-ray.com", date: "2018-04-19", scale: 5, video: 5, audio: 4, extras: 5 },
+            { src: "kk_db18", label: "The Digital Bits", video: "A" }
+          ],
           src: ["kk_db18", "kk_bd18", "kk_isle", "kk_md"]
         },
         {
@@ -732,8 +1437,35 @@ window.AMR_CATALOG = {
           differences: [
             { pt: "Também há edição em steelbook", en: "Also available as a steelbook" }
           ],
-          reception: { level: "bem_avaliado", note: { pt: "Vídeo 4,5/5 na AV Nirvana; áudio considerado mediano.", en: "Video 4.5/5 at AV Nirvana; audio considered average." } },
+          reception: { level: "bem_avaliado", note: { pt: "Vídeo nota A na The Digital Bits e 4,5/5 no Blu-ray.com; áudio considerado mediano.", en: "Video A at The Digital Bits and 4.5/5 at Blu-ray.com; audio considered average." } },
           availability: "in_print", best_for: ["imagem", "oficial"],
+          scores: {
+            fidelity: {
+              v: 4,
+              why: { pt: "Scan 4K do negativo, ao que tudo indica o mesmo usado pela Arrow. O HDR com Dolby Vision é uma releitura das cores, algumas análises notam pretos esmagados e há um breve corte no áudio perto de 1h43.", en: "A 4K scan of the negative, apparently the same one Arrow used. The Dolby Vision HDR reinterprets the color, some reviews note crushed blacks, and there is a brief audio edit near 1:43." },
+              src: ["kk_db4k", "kk_br4ks", "kk_mc4k"]
+            },
+            picture: {
+              v: 5,
+              why: { pt: "A melhor imagem que o filme já teve em casa: 4K nativo, cores intensas e grão fino (vídeo A na The Digital Bits e 4,5/5 no Blu-ray.com).", en: "The best picture the film has had at home: native 4K, vivid color and fine grain (video A at The Digital Bits and 4.5/5 at Blu-ray.com)." },
+              src: ["kk_db4k", "kk_br4ks", "kk_avn"]
+            },
+            audio: {
+              v: 3,
+              why: { pt: "O 5.1 fica concentrado na frente e irregular, e as análises divergem (C na The Digital Bits, 4/5 no Blu-ray.com). Inclui faixa 2.0.", en: "The 5.1 is front-heavy and uneven, and reviews disagree (C at The Digital Bits, 4/5 at Blu-ray.com). A 2.0 track is included." },
+              src: ["kk_db4k", "kk_br4ks", "kk_mc4k"]
+            },
+            extras: {
+              v: 4,
+              why: { pt: "Repete quase tudo das edições anteriores, mas sem parte do material exclusivo da Arrow.", en: "Repeats almost everything from earlier editions, but lacks some of Arrow's exclusive material." },
+              src: ["kk_mc4k", "kk_dvdc"]
+            }
+          },
+          reviews: [
+            { src: "kk_br4ks", label: "Blu-ray.com", date: "2024-05-18", scale: 5, video: 4.5, audio: 4, extras: 5 },
+            { src: "kk_db4k", label: "The Digital Bits", date: "2024-05-30", video: "A", audio: "C", extras: "B+" },
+            { src: "kk_avn", label: "AV Nirvana", scale: 5, video: 4.5 }
+          ],
           src: ["kk_avn", "kk_mc4k"]
         }
       ]
@@ -798,6 +1530,53 @@ window.AMR_CATALOG = {
         pt: "Procura-se: scan de cópia IB Technicolor 35mm. Cópias 35mm com a dublagem brasileira de 1951 existem em arquivos; a Cinemateca Portuguesa exibiu uma em 2022.",
         en: "Wanted: a scan of a 35mm IB Technicolor print. 35mm prints with the 1951 Brazilian dub survive in archives; the Portuguese Cinemateca screened one in 2022."
       },
+      releases: [
+        {
+          date: "1986-05-27",
+          country: "US",
+          format: "vhs",
+          label: "Walt Disney Home Video",
+          name: { pt: "Linha Walt Disney Classics", en: "Walt Disney Classics line" },
+          version: "al-vhs",
+          src: ["al_vhs"]
+        },
+        {
+          date: "2004",
+          country: "US",
+          format: "dvd",
+          label: "Walt Disney Home Entertainment",
+          name: { pt: "Masterpiece Edition, 2 discos", en: "Masterpiece Edition, 2 discs" },
+          version: "al-dvds",
+          src: ["al_dvdv"]
+        },
+        {
+          date: "2010",
+          country: "US",
+          format: "dvd",
+          label: "Walt Disney Studios",
+          name: { pt: "Special Un-Anniversary Edition, 2 discos", en: "Special Un-Anniversary Edition, 2 discs" },
+          version: "al-dvds",
+          src: ["al_dvdv"]
+        },
+        {
+          date: "2011-02-01",
+          country: "US",
+          format: "bd",
+          label: "Walt Disney Studios",
+          name: { pt: "Edição de 60º aniversário", en: "60th Anniversary Edition" },
+          version: "al-bd-2011",
+          src: ["al_db"]
+        },
+        {
+          date: "2026-05-05",
+          country: "US",
+          format: "4k",
+          label: "Walt Disney Studios",
+          name: { pt: "Edição de 75º aniversário, 4K UHD + Blu-ray", en: "75th Anniversary Edition, 4K UHD + Blu-ray" },
+          version: "al-uhd-2026",
+          src: ["al_pr"]
+        }
+      ],
       versions: [
         {
           id: "al-cinema-1951", type: "theatrical",
@@ -828,6 +1607,14 @@ window.AMR_CATALOG = {
           differences: [],
           reception: { level: "misto", note: { pt: "Valor nostálgico e de dublagem; imagem limitada.", en: "Nostalgic and dubbing value; limited picture." } },
           availability: "out_of_print", best_for: ["colecionador", "dublagem"], dubs: ["al-dub-1951"],
+          scores: {
+            fidelity: {
+              v: 3,
+              why: { pt: "Master antigo em definição padrão; vale sobretudo pela dublagem clássica de 1951.", en: "An older standard-definition master; it is valued mostly for the classic 1951 dub." },
+              src: ["al_vhs"]
+            },
+            picture: { v: 1, why: { pt: "Imagem limitada do VHS.", en: "Limited VHS picture." }, src: ["al_vhs"] }
+          },
           src: ["al_vhs", "al_blog"]
         },
         {
@@ -842,10 +1629,23 @@ window.AMR_CATALOG = {
           differences: [],
           reception: { level: "bem_avaliado", note: { pt: "Boas edições para o formato; superadas pelo Blu-ray.", en: "Good editions for the format; surpassed by the Blu-ray." } },
           availability: "out_of_print", best_for: [], dubs: ["al-dub-1951"],
-          editions: [
-            { year: 2004, format: "DVD (2 discos)", region: { pt: "EUA", en: "US" }, label: "Walt Disney Home Entertainment", note: { pt: "Masterpiece Edition", en: "Masterpiece Edition" } },
-            { year: 2010, format: "DVD (2 discos)", region: { pt: "EUA", en: "US" }, label: "Walt Disney Studios", note: { pt: "Special Un-Anniversary Edition", en: "Special Un-Anniversary Edition" } }
-          ],
+          scores: {
+            fidelity: {
+              v: 3,
+              why: { pt: "Boas transferências para o formato, anteriores à restauração de 2011.", en: "Good transfers for the format, predating the 2011 restoration." },
+              src: ["al_dvdv"]
+            },
+            picture: {
+              v: 2,
+              why: { pt: "Boas edições para o formato, superadas pelo Blu-ray.", en: "Good editions for the format, surpassed by the Blu-ray." },
+              src: ["al_dvdv"]
+            },
+            extras: {
+              v: 4,
+              why: { pt: "A Masterpiece Edition (2004) trouxe disco duplo com extras, repetidos quase todos em 2010.", en: "The 2004 Masterpiece Edition brought a two-disc set of extras, almost all repeated in 2010." },
+              src: ["al_dvdv"]
+            }
+          },
           src: ["al_dvdv"]
         },
         {
@@ -866,6 +1666,29 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "aclamado", note: { pt: "Nota máxima de imagem em várias análises (10/10 na Sound & Vision).", en: "Top picture marks in several reviews (10/10 at Sound & Vision)." } },
           availability: "check", best_for: ["dublagem"], dubs: ["al-dub-1951"],
+          scores: {
+            fidelity: {
+              v: 4,
+              why: { pt: "Restauração completa e cores vivas, com a mixagem mono original incluída.", en: "A full restoration with vivid colors, including the original mono mix." },
+              src: ["al_sv", "al_db"]
+            },
+            picture: {
+              v: 4,
+              why: { pt: "Nota máxima de imagem em várias análises (10/10 na Sound & Vision); hoje superada pelo 4K.", en: "Top picture marks in several reviews (10/10 at Sound & Vision); now surpassed by the 4K." },
+              src: ["al_sv", "al_tt"]
+            },
+            audio: {
+              v: 4,
+              why: { pt: "Mono original em Dolby Digital 2.0 e um 5.1 novo.", en: "The original mono in Dolby Digital 2.0 and a new 5.1." },
+              src: ["al_db"]
+            },
+            extras: {
+              v: 4,
+              why: { pt: "Muitos extras, incluindo a canção inédita do gato (“I'm Odd”).", en: "Plenty of extras, including the Cat's unreleased song (“I'm Odd”)." },
+              src: ["al_db", "al_htf"]
+            }
+          },
+          reviews: [{ src: "al_sv", label: "Sound & Vision", scale: 10, video: 10 }],
           src: ["al_tt", "al_sv", "al_db", "al_htf", "al_blog"]
         },
         {
@@ -885,6 +1708,32 @@ window.AMR_CATALOG = {
           ],
           reception: { level: "aclamado", note: { pt: "“Reference quality”, segundo Robert A. Harris; 4,5 estrelas no Home Theater Forum.", en: "“Reference quality,” per Robert A. Harris; 4.5 stars at Home Theater Forum." } },
           availability: "in_print", best_for: ["imagem", "oficial"],
+          scores: {
+            fidelity: {
+              v: 5,
+              why: { pt: "Nova restauração dos negativos de nitrato pela Walt Disney Film Restoration, chamada de lançamento de referência por Robert A. Harris.", en: "A new restoration from the nitrate negatives by Walt Disney Film Restoration, called a reference release by Robert A. Harris." },
+              src: ["al_rah", "al_pr"]
+            },
+            picture: {
+              v: 5,
+              why: { pt: "Mais definição do que qualquer edição anterior; o HDR realça as cores, sobretudo os vermelhos.", en: "More detail than any previous edition; the HDR boosts the colors, especially the reds." },
+              src: ["al_htf", "al_rah"]
+            },
+            audio: {
+              v: 4,
+              why: { pt: "DTS-HD MA 5.1 e o mono original.", en: "DTS-HD MA 5.1 and the original mono." },
+              src: ["al_pr"]
+            },
+            extras: {
+              v: 3,
+              why: { pt: "Os extras ficam todos no Blu-ray de 2011 incluso.", en: "All extras are on the included 2011 Blu-ray." },
+              src: ["al_htf"]
+            }
+          },
+          reviews: [
+            { src: "al_htf", label: "Home Theater Forum", scale: 5, overall: 4.5 },
+            { src: "al_rah", label: "Robert A. Harris", text: { pt: "“reference quality”", en: "“reference quality”" } }
+          ],
           src: ["al_pr", "al_twdc", "al_tcm", "al_rah", "al_htf"]
         }
       ]
@@ -941,6 +1790,24 @@ window.AMR_CATALOG = {
     kk_isle: { t: "The Movie Isle — Arrow's Killer Klowns (2018)", u: "https://themovieisle.com/2018/04/25/blu-ray-review-arrow-videos-killer-klowns-form-outer-space-collectors-edition/" },
     kk_avn:  { t: "AV Nirvana — Killer Klowns 4K Blu-ray review (2024)", u: "https://www.avnirvana.com/threads/killer-klowns-from-outer-space-4k-blu-ray-review.13684/latest" },
     kk_mc4k: { t: "Mighty Chroma — Killer Klowns 4K UHD reviews roundup", u: "https://mightychroma.me/review/a88d124d-5beb-59cd-b888-59f257145f81" },
+    kk_brt: { t: "Blu-ray.com — Killer Klowns from Outer Space (página do filme e edições)", u: "https://www.blu-ray.com/Killer-Klowns-from-Outer-Space/132093/" },
+    kk_brdvd: { t: "Blu-ray.com — Killer Klowns DVD (MGM, 2001)", u: "https://www.blu-ray.com/dvd/Killer-Klowns-from-Outer-Space-DVD/1254/" },
+    kk_br12: { t: "Blu-ray.com — Killer Klowns Blu-ray (MGM, 2012), ficha e análise", u: "https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-Blu-ray/50301/" },
+    kk_br14p: { t: "Blu-ray.com — Killer Klowns Blu-ray + DVD (Arrow, Reino Unido, 2014)", u: "https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-Blu-ray/104491/" },
+    kk_br18: { t: "Blu-ray.com — Killer Klowns Blu-ray Remastered (Arrow, EUA, 2018), ficha e análise", u: "https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-Blu-ray/195586/" },
+    kk_br4k: { t: "Blu-ray.com — Killer Klowns 4K, 35th Anniversary Edition (Scream Factory, 2024)", u: "https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-4K-Blu-ray/356845/" },
+    kk_br4ks: { t: "Blu-ray.com — Killer Klowns 4K SteelBook (Scream Factory, 2024), ficha e análise", u: "https://www.blu-ray.com/movies/Killer-Klowns-from-Outer-Space-4K-Blu-ray/356858/" },
+    kk_dvdc: { t: "DVDCompare — Killer Klowns From Outer Space (Blu-ray), comparação de edições", u: "https://www.dvdcompare.net/comparisons/film.php?fid=20970" },
+    kk_db4k: { t: "The Digital Bits — Killer Klowns: 35th Anniversary Edition (4K UHD, 2024)", u: "https://digitalbits.com/item/killer-klowns-35th-scream-2024-uhd" },
+    kk_ad19: { t: "areaDVD — Killer Klowns: Mediabook da Koch Media com remaster 4K (2019)", u: "https://www.areadvd.de/news/killer-klowns-mit-4k-remaster-auf-blu-ray-disc/" },
+    kk_ad22: { t: "areaDVD — Killer Klowns: novo Mediabook da Plaion Pictures (2022)", u: "https://www.areadvd.de/news/killer-klowns-from-outer-space-erscheint-mit-4k-remaster-als-exklusives-blu-ray-disc-mediabook/" },
+    kk_hmv24: { t: "HMV — Killer Klowns from Outer Space Blu-ray (Final Cut, 2024)", u: "https://hmv.com/store/film-tv/blu-ray/killer-klowns-from-outer-space-(2)" },
+    kk_ff18: { t: "Fetch — Arrow Video: Killer Klowns no Reino Unido (9/4/2018)", u: "https://fetch.fm/arrow-video/arrow-video-killer-klowns-from-outer-space/" },
+    kk_hcf14: { t: "Horror Cult Films — Arrow lança Killer Klowns em DVD, Blu-ray e steelbook (2014)", u: "https://horrorcultfilms.co.uk/?p=98936" },
+    kk_om25: { t: "Omelete — Palhaços Assassinos do Espaço Sideral no Prime Video (2025)", u: "https://www.omelete.com.br/filmes/palhacos-assassinos-do-espaco-sideral-pode-ter-remake-com-ryan-gosling" },
+    kk_mc12: { t: "Mighty Chroma — Killer Klowns Blu-ray (MGM, 2012), resumo de análises", u: "https://mightychroma.me/review/7e5ffc32-601b-5573-b61a-cf199dc5ef85" },
+    kk_mc18: { t: "Mighty Chroma — Killer Klowns Blu-ray (Arrow, 2018), resumo de análises", u: "https://mightychroma.me/review/ab499c55-f69f-527a-9fa0-5d11c235ab6d" },
+    kk_tb12: { t: "TheaterByte — Killer Klowns Blu-ray (MGM, 2012)", u: "https://theaterbyte.com/killer-klowns-from-outer-space-blu-ray-review" },
 
     al_htf:  { t: "Home Theater Forum — Alice in Wonderland (1951) UHD review", u: "https://www.hometheaterforum.com/alice-in-wonderland-1951-uhd-review/" },
     al_rah:  { t: "Robert A. Harris — A few words about… Alice in Wonderland (1951) in 4K UHD", u: "https://www.hometheaterforum.com/a-few-words-about-alice-in-wonderland-1951-in-4k-uhd/" },

@@ -11,7 +11,7 @@ window.AMR_CONFIG = {
 
   // URL do Web App do Google Apps Script (termina em /exec). Veja backend/Code.gs e o README.
   // Vazio = modo demonstração: a fila de sugestões fica só no navegador.
-  APPS_SCRIPT_URL: "",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxrNfcFC5WKZg4hcv7nigOxGtXqAb_U4zJ8dRgkQciJ_Y-z4FQIRDsc3Wxtldh70FUw2w/exec",
 
   // Chave do TMDB usada por todos os visitantes: capas, sinopses e Galeria sem precisar colar nada.
   // Ela fica visível para quem abrir o código do site. Se alguém abusar dela, o TMDB pode bloqueá-la;

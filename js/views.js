@@ -1,4 +1,4 @@
-/* AllMovieRelease — telas (geram HTML a partir do catálogo) */
+/* RareVersion — telas (geram HTML a partir do catálogo) */
 (function () {
   'use strict';
   const A = window.AMR;
@@ -190,6 +190,7 @@
         (soon.length ? strip('row-soon', t('row_soon'), soon.map(frameCard).join('')) : '') +
         strip('row-off', t('row_official'), official.map(frameCard).join('')) +
         strip('row-acc', t('row_acclaimed'), acclaimed.map(frameCard).join('')) +
+        strip('row-music', t('mu_home_row'), musicFrames(), '#musicas') +
       '</div>' +
       wantedSection(wanted);
   };
@@ -726,6 +727,248 @@
     '</article>';
   };
 
+  /* ---------------- músicas ---------------- */
+  const PLAY = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>';
+  const MLINKS = ['wikipedia', 'archive', 'musicbrainz', 'discogs', 'setlistfm', 'concerts'];
+  const artArt = (a) => '--a:' + A.safeColor(a.accent, '#e0607e') + ';--b:' + A.safeColor(a.accent2, '#6c8fd6');
+  const artistHref = (a, tab, focus) => '#musicas/' + a.id + (tab && tab !== 'musicas' ? '/' + tab : '') + (focus ? '/' + focus : '');
+  const songHref = (a, s) => '#musicas/' + a.id + '/' + s.id;
+  function mtBadge(type) { return '<span class="badge mt-' + esc(type) + '"><i aria-hidden="true"></i>' + esc(t('mt_' + type)) + '</span>'; }
+  function msChip(st) { return '<span class="chip ms-' + esc(st) + '">' + esc(t('ms_' + st)) + '</span>'; }
+  V.mtBadge = mtBadge;
+  function songTitle(a, tr) {
+    const s = tr.song && A.song(a, tr.song);
+    return s ? s.title : (L(tr.title) || t('mu_song'));
+  }
+  function playBtn(o) {
+    if (!A.ia.ok(o.id)) return '';
+    return '<button type="button" class="btn small play' + (o.icon ? ' icon-only' : '') + '" data-action="play" data-ia="' + esc(o.id) + '"' +
+      (o.file ? ' data-file="' + esc(o.file) + '"' : '') + ' data-title="' + esc(o.title) + '" data-sub="' + esc(o.sub || '') + '"' +
+      (o.icon ? ' aria-label="' + esc(t('mu_listen') + ': ' + o.title) + '" title="' + esc(t('mu_listen')) + '"' : '') + '>' + PLAY + (o.icon ? '' : '<span>' + esc(o.label || t('mu_listen')) + '</span>') + '</button>';
+  }
+  function iaLink(id) {
+    const u = A.ia.details(id);
+    return u ? '<a class="btn small ghost" href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + esc(t('mu_open_ia')) + ICON.ext + '</a>' : '';
+  }
+  function artistStats(a) {
+    let rare = 0;
+    a.songs.forEach((s) => { rare += A.songVersions(a, s).filter(A.isRare).length; });
+    return { songs: a.songs.length, rare, unrel: a.songs.filter((s) => s.status === 'unreleased').length, sessions: a.sessions.length };
+  }
+  function statLine(st) {
+    return [A.plural(st.songs, 'mu_one_song', 'mu_n_songs'), A.plural(st.rare, 'mu_one_rare', 'mu_n_rare'),
+      st.unrel ? A.plural(st.unrel, 'mu_one_unrel', 'mu_n_unrel') : '', st.sessions ? A.plural(st.sessions, 'mu_one_session', 'mu_n_sessions') : ''].filter(Boolean);
+  }
+  function artistCard(a) {
+    return '<a class="acard" href="' + esc(artistHref(a)) + '" style="' + artArt(a) + '">' +
+      '<span class="acard-disc" aria-hidden="true"><span class="acard-label">' + esc(a.name.replace(/^[’']/, '').charAt(0)) + '</span></span>' +
+      '<span class="acard-body"><span class="acard-name">' + esc(a.name) + '</span>' +
+        '<span class="acard-meta">' + esc([a.years, L(a.origin)].filter(Boolean).join(' · ')) + '</span>' +
+        '<span class="acard-counts">' + statLine(artistStats(a)).map((x) => '<span>' + esc(x) + '</span>').join('') + '</span></span></a>';
+  }
+  function songRow(a, s, showArtist) {
+    const vs = A.songVersions(a, s);
+    const types = A.MUSIC_TYPES.filter((tp) => vs.some((v) => v.type === tp));
+    return '<li class="srow"><a class="srow-link" href="' + esc(songHref(a, s)) + '"><span class="srow-title">' + esc(s.title) + '</span>' +
+      (showArtist ? '<span class="srow-artist">' + esc(a.name) + '</span>' : (s.year ? '<span class="srow-year">' + esc(s.year) + '</span>' : '')) + '</a>' +
+      '<span class="srow-status">' + msChip(s.status) + '</span>' +
+      '<span class="srow-types">' + types.map((tp) => {
+        const n = vs.filter((v) => v.type === tp).length;
+        return '<span class="tchip mt-' + tp + '"><i aria-hidden="true"></i>' + esc(t('mt_' + tp)) + (n > 1 ? ' <b>×' + n + '</b>' : '') + '</span>';
+      }).join('') + '</span></li>';
+  }
+  // Cartões das versões raras para a fileira da página inicial
+  function musicFrames() {
+    const out = [];
+    A.music.artists.forEach((a) => a.songs.forEach((s) => A.songVersions(a, s).filter(A.isRare).forEach((v) => out.push({ a, s, v }))));
+    out.sort((p, q) => (q.s.status === 'unreleased') - (p.s.status === 'unreleased') || A.dateKey(p.v.date) - A.dateKey(q.v.date));
+    return out.slice(0, 16).map((o) => '<a class="frame mframe-card mt-' + esc(o.v.type) + '" href="' + esc(songHref(o.a, o.s)) + '" style="' + artArt(o.a) + '">' +
+      '<span class="frame-pic"><span class="frame-film">' + esc(o.a.name) + '</span><span class="frame-name">' + esc(o.s.title) + '</span></span>' +
+      '<span class="frame-info">' + mtBadge(o.v.type) + '<span class="frame-date">' + esc(A.fmtDate(o.v.date)) + '</span></span>' +
+      '<span class="frame-seal">' + msChip(o.s.status) + '</span></a>').join('');
+  }
+  function sessionMini(a, x) {
+    return '<article class="smini mt-' + esc(x.kind) + '">' +
+      '<p class="smini-top">' + mtBadge(x.kind) + '<span class="smini-date">' + esc(A.fmtDate(x.date)) + '</span></p>' +
+      '<h3><a href="' + esc(artistHref(a, 'gravacoes', x.id)) + '">' + esc(L(x.title)) + '</a></h3>' +
+      '<p class="smini-meta">' + esc([a.name, A.sessionPlace(x), x.source_type ? t('msrc_' + x.source_type) : ''].filter(Boolean).join(' · ')) + '</p>' +
+      '<p class="smini-actions">' + (x.archive ? playBtn({ id: x.archive.id, title: L(x.title), sub: a.name + ' · ' + A.fmtDate(x.date), label: t('mu_listen_all') }) : '') + '</p>' +
+    '</article>';
+  }
+  function musicSearch(fq) {
+    const arts = [];
+    const songs = [];
+    const sess = [];
+    A.music.artists.forEach((a) => {
+      if (A.fold(a.name).replace(/[’']/g, '').indexOf(fq.replace(/[’']/g, '')) >= 0) arts.push(a);
+      a.songs.forEach((s) => { if (A.fold(s.title).indexOf(fq) >= 0) songs.push({ a, s }); });
+      a.sessions.forEach((x) => { if ([L(x.title), x.venue, x.city, x.date].some((v) => A.fold(v).indexOf(fq) >= 0)) sess.push({ a, x }); });
+    });
+    if (!arts.length && !songs.length && !sess.length) return '';
+    return '<div class="sr-group"><h3>' + esc(t('s_music')) + '</h3>' +
+      arts.map((a) => '<a class="sr-item" href="' + esc(artistHref(a)) + '"><span class="sr-title">' + esc(a.name) + '</span><span class="sr-sub"><span>' + esc(a.years || '') + '</span><span>' + esc(A.plural(a.songs.length, 'mu_one_song', 'mu_n_songs')) + '</span></span></a>').join('') +
+      songs.slice(0, 8).map((o) => '<a class="sr-item" href="' + esc(songHref(o.a, o.s)) + '"><span class="sr-title">' + esc(o.s.title) + '</span><span class="sr-sub"><span>' + esc(o.a.name) + '</span><span>' + esc(t('ms_' + o.s.status)) + '</span></span></a>').join('') +
+      sess.slice(0, 4).map((o) => '<a class="sr-item" href="' + esc(artistHref(o.a, 'gravacoes', o.x.id)) + '"><span class="sr-title">' + esc(L(o.x.title)) + '</span><span class="sr-sub"><span>' + esc(o.a.name) + '</span><span>' + esc(A.fmtDate(o.x.date)) + '</span></span></a>').join('') +
+    '</div>';
+  }
+
+  V.musicHome = function () {
+    const arts = A.music.artists;
+    const unrel = [];
+    const sess = [];
+    arts.forEach((a) => {
+      a.songs.filter((s) => s.status === 'unreleased').forEach((s) => unrel.push({ a, s }));
+      a.sessions.forEach((x) => sess.push({ a, x }));
+    });
+    sess.sort((p, q) => A.dateKey((q.x.archive && q.x.archive.added) || q.x.date) - A.dateKey((p.x.archive && p.x.archive.added) || p.x.date));
+    return '<section class="page music-home">' +
+      '<header class="page-head"><h1>' + esc(t('mu_title')) + '</h1><p class="lead">' + esc(t('mu_lead')) + '</p>' +
+        '<p><button type="button" class="btn small ghost" data-action="suggest" data-kind="music">' + esc(t('nav_suggest')) + '</button></p></header>' +
+      '<section class="sec"><div class="sec-head"><h2>' + esc(t('mu_artists')) + '</h2></div><div class="acards">' + arts.map(artistCard).join('') + '</div></section>' +
+      (sess.length ? '<section class="sec"><div class="sec-head"><h2>' + esc(t('mu_sessions_row')) + '</h2></div><div class="smini-list">' + sess.slice(0, 6).map((o) => sessionMini(o.a, o.x)).join('') + '</div></section>' : '') +
+      (unrel.length ? '<section class="sec"><div class="sec-head"><h2>' + esc(t('mu_unrel_row')) + '</h2></div><ul class="slist">' + unrel.map((o) => songRow(o.a, o.s, true)).join('') + '</ul></section>' : '') +
+      '<p class="sec mu-policy muted">' + esc(t('mu_policy')) + '</p>' +
+    '</section>';
+  };
+
+  /* página do artista */
+  const ARTIST_TABS = ['musicas', 'gravacoes', 'discografia'];
+  V.ARTIST_TABS = ARTIST_TABS;
+  V.artistTab = function (a) { const tb = A.state.artistTab[a.id]; return ARTIST_TABS.indexOf(tb) >= 0 ? tb : 'musicas'; };
+  function linksBlock(a) {
+    const ks = MLINKS.filter((k) => A.safeUrl(a.links[k]));
+    if (!ks.length) return '';
+    return '<p class="rel-more">' + esc(t('mu_links')) + ': ' + ks.map((k) => '<a href="' + esc(a.links[k]) + '" target="_blank" rel="noopener noreferrer">' + esc(t('mu_link_' + k)) + ICON.ext + '</a>').join(' ') + '</p>';
+  }
+  function songsPanel(a) {
+    const cur = A.state.songFilter[a.id] || 'all';
+    const tests = {
+      all: () => true,
+      unrel: (s) => s.status === 'unreleased',
+      demo: (s) => A.songVersions(a, s).some((v) => v.type === 'demo'),
+      live: (s) => A.songVersions(a, s).some((v) => v.type === 'live' || v.type === 'session')
+    };
+    const keys = ['all', 'unrel', 'demo', 'live'].filter((k) => k === 'all' || a.songs.some(tests[k]));
+    const chips = keys.map((k) => {
+      const n = a.songs.filter(tests[k]).length;
+      return '<button type="button" class="fchip' + (k === cur ? ' on' : '') + '" aria-pressed="' + (k === cur) + '" data-action="song-filter" data-artist="' + esc(a.id) + '" data-filter="' + k + '">' +
+        esc(t(k === 'all' ? 'mu_all' : 'mu_f_' + k)) + ' <span class="fcount">' + n + '</span></button>';
+    }).join('');
+    const list = a.songs.filter(tests[cur] || tests.all).slice().sort((p, q) => p.title.localeCompare(q.title));
+    const srcs = sourceLinks((a.intro_src || []).concat(...a.songs.map((s) => s.src || [])));
+    return '<section class="sec" id="sec-songs"><div class="fchips" role="group" aria-label="' + esc(t('atab_songs')) + '">' + chips + '</div>' +
+      (list.length ? '<ul class="slist">' + list.map((s) => songRow(a, s)).join('') + '</ul>' : '<p class="muted">' + esc(t('mu_none')) + '</p>') + '</section>' +
+      (a.wanted ? '<aside class="wanted-note"><h2>' + esc(t('mu_wanted')) + '</h2><p>' + esc(L(a.wanted)) + '</p><button class="btn small ghost" type="button" data-action="suggest" data-kind="music" data-artist="' + esc(a.id) + '">' + esc(t('nav_suggest')) + '</button></aside>' : '') +
+      '<section class="sec">' + linksBlock(a) + (srcs ? '<h2 class="h-small">' + esc(t('fp_sources')) + '</h2>' + srcs : '') + '<p class="mu-policy muted">' + esc(t('mu_policy')) + '</p></section>';
+  }
+  function sessionCard(a, x) {
+    const meta = [A.sessionPlace(x), x.source_type ? t('msrc_' + x.source_type) : '', x.archive && x.archive.runtime ? x.archive.runtime : ''].filter(Boolean).join(' · ');
+    const tracks = x.tracks.map((tr) => {
+      const s = tr.song && A.song(a, tr.song);
+      const title = songTitle(a, tr);
+      return '<li><span class="trk-n">' + esc(tr.n || '') + '</span>' +
+        '<span class="trk-t">' + (s ? '<a href="' + esc(songHref(a, s)) + '">' + esc(title) + '</a>' + (s.status === 'unreleased' ? ' ' + msChip('unreleased') : '') : '<span class="muted">' + esc(title) + '</span>') +
+          (L(tr.note) ? '<small>' + esc(L(tr.note)) + '</small>' : '') + '</span>' +
+        '<span class="trk-l">' + esc(tr.length || '') + '</span>' +
+        '<span class="trk-p">' + (x.archive && tr.file ? playBtn({ id: x.archive.id, file: tr.file, title, sub: a.name + ' · ' + L(x.title) + ' · ' + A.fmtDate(x.date), icon: true }) : '') + '</span></li>';
+    }).join('');
+    const q = Math.round(Number(x.quality) || 0);
+    return '<article class="sess mt-' + esc(x.kind) + '" id="s-' + esc(x.id) + '">' +
+      '<header class="sess-head"><p class="smini-top">' + mtBadge(x.kind) + '<span class="smini-date">' + esc(A.fmtDate(x.date)) + '</span>' + (x.community ? ' <span class="chip community">' + esc(t('fp_community')) + '</span>' : '') + '</p>' +
+        '<h3>' + esc(L(x.title)) + '</h3><p class="sess-meta">' + esc(meta) + '</p></header>' +
+      (L(x.notes) ? '<p class="sess-notes">' + esc(L(x.notes)) + '</p>' : '') +
+      (x.archive ? '<p class="sess-actions">' + playBtn({ id: x.archive.id, title: L(x.title), sub: a.name + ' · ' + A.fmtDate(x.date), label: t('mu_listen_all') }) + iaLink(x.archive.id) + '</p>' : '') +
+      '<details class="vrow-more"><summary>' + esc(t('mu_lineage')) + '</summary><dl class="specs">' +
+        (L(x.lineage) ? '<div><dt>' + esc(t('mu_lineage')) + '</dt><dd>' + esc(L(x.lineage)) + '</dd></div>' : '') +
+        (q ? '<div><dt>' + esc(t('mu_quality')) + '</dt><dd><span class="lv' + q + '">' + dots(q) + '</span> ' + esc(t('sc_lv' + q)) + (L(x.quality_note) ? ' — ' + esc(L(x.quality_note)) : '') + '</dd></div>' : '') +
+        (x.archive && x.archive.uploader ? '<div><dt>Internet Archive</dt><dd>' + esc(t('mu_uploaded', { u: x.archive.uploader, d: A.fmtDate(x.archive.added) })) + (x.archive.collection ? ' · ' + esc(x.archive.collection) : '') + '</dd></div>' : '') +
+      '</dl>' + sourceLinks(x.src, x.src_urls) + '</details>' +
+      (tracks ? '<h4>' + esc(t('mu_tracks')) + '</h4><ol class="tracks">' + tracks + '</ol>' : '') +
+    '</article>';
+  }
+  function sessionsPanel(a) {
+    const list = a.sessions.slice().sort((p, q) => A.dateKey(p.date) - A.dateKey(q.date));
+    return '<section class="sec" id="sec-sessions">' + (list.length ? '<div class="sess-list">' + list.map((x) => sessionCard(a, x)).join('') + '</div>' : '<p class="muted">' + esc(t('mu_none')) + '</p>') +
+      '<p class="mu-policy muted">' + esc(t('mu_policy')) + '</p></section>';
+  }
+  const RG_ORDER = ['Album', 'EP', 'Single', 'Live', 'Compilation', 'Other'];
+  function rgGroup(g) {
+    if (g.sec.indexOf('Compilation') >= 0) return 'Compilation';
+    if (g.sec.indexOf('Live') >= 0) return 'Live';
+    return ['Album', 'EP', 'Single'].indexOf(g.type) >= 0 ? g.type : 'Other';
+  }
+  function discoPanel(a) {
+    const head = '<div class="sec-head"><p class="sec-lead">' + esc(t('mu_disco_lead')) + '</p></div>';
+    const m = A.mb.get(a);
+    if (!m || m.state === 'loading') return '<section class="sec" id="sec-disco">' + head + '<p class="gal-wait" role="status">' + esc(t('mu_disco_loading')) + '</p></section>';
+    if (m.state === 'error') return '<section class="sec" id="sec-disco">' + head + '<div class="gal-off"><p>' + esc(t('mu_disco_fail')) + '</p><button type="button" class="btn ghost" data-action="disco-retry" data-artist="' + esc(a.id) + '">' + esc(t('gl_retry')) + '</button></div></section>';
+    if (!m.data.length) return '<section class="sec" id="sec-disco">' + head + '<p class="muted">' + esc(t('mu_disco_empty')) + '</p></section>';
+    const groups = RG_ORDER.map((k) => ({ k, items: m.data.filter((g) => rgGroup(g) === k).sort((p, q) => String(p.date).localeCompare(String(q.date))) })).filter((g) => g.items.length);
+    return '<section class="sec" id="sec-disco">' + head + groups.map((g) =>
+      '<div class="gal-block"><h3>' + esc(t('mu_rg_' + g.k)) + ' <span class="fcount">' + g.items.length + '</span></h3><div class="rg-grid">' + g.items.map((r) =>
+        '<a class="rg" href="https://musicbrainz.org/release-group/' + esc(r.id) + '" target="_blank" rel="noopener noreferrer">' +
+          '<span class="rg-cover" style="' + artArt(a) + '"><span class="rg-ph">' + esc(r.title) + '</span><img src="' + esc(A.caa(r.id, 250)) + '" alt="" loading="lazy" decoding="async"></span>' +
+          '<span class="rg-title">' + esc(r.title) + '</span><span class="rg-year">' + esc(A.year(r.date) || '') + '</span></a>').join('') + '</div></div>').join('') +
+      '<p class="gal-credit muted">' + esc(t('mu_disco_credit')) + (m.mbid ? ' <a href="https://musicbrainz.org/artist/' + esc(m.mbid) + '" target="_blank" rel="noopener noreferrer">MusicBrainz' + ICON.ext + '</a>' : '') + '</p></section>';
+  }
+  V.artist = function (a) {
+    const tab = V.artistTab(a);
+    const st = artistStats(a);
+    const members = a.members.map((m) => esc(m.name) + (L(m.role) ? ' <span class="muted">(' + esc(L(m.role)) + ')</span>' : '')).join(' · ');
+    const tabs = [['musicas', 'atab_songs', a.songs.length], ['gravacoes', 'atab_sessions', a.sessions.length], ['discografia', 'atab_disco', 0]];
+    const panel = tab === 'gravacoes' ? sessionsPanel(a) : tab === 'discografia' ? discoPanel(a) : songsPanel(a);
+    return '<article class="film artist" style="' + artArt(a) + '">' +
+      '<header class="film-hero"><div class="hero-bg" aria-hidden="true"><span class="hero-year">' + esc(String(a.years || '').slice(0, 4)) + '</span></div>' +
+        '<div class="film-hero-inner"><div class="film-side"><div class="film-poster disc-poster"><span class="acard-disc big" aria-hidden="true"><span class="acard-label">' + esc(a.name.replace(/^[’']/, '').charAt(0)) + '</span></span></div></div>' +
+          '<div class="film-head"><p class="eyebrow"><a href="#musicas">' + esc(t('mu_title')) + '</a></p><h1>' + esc(a.name) + '</h1>' +
+            '<p class="meta">' + [a.years, L(a.origin)].filter(Boolean).map((x) => '<span>' + esc(x) + '</span>').join('') + '</p>' +
+            (members ? '<p class="film-alt">' + esc(t('mu_members')) + ': ' + members + '</p>' : '') +
+            (L(a.intro) ? '<p class="film-overview">' + esc(L(a.intro)) + '</p>' : '') +
+            '<p class="film-counts">' + statLine(st).map((x) => '<span>' + esc(x) + '</span>').join('') + '</p>' +
+            '<div class="actions"><button class="btn ghost" type="button" data-action="suggest" data-kind="music" data-artist="' + esc(a.id) + '">' + esc(t('nav_suggest')) + '</button></div>' +
+          '</div></div></header>' +
+      '<nav class="film-tabs" id="artist-tabs" aria-label="' + esc(t('atabs_label')) + '"><div class="film-tabs-inner" role="tablist">' +
+        tabs.map((tb) => '<button type="button" role="tab" class="ftab' + (tb[0] === tab ? ' on' : '') + '" id="atab-' + tb[0] + '" aria-selected="' + (tb[0] === tab) + '" aria-controls="artist-panel" tabindex="' + (tb[0] === tab ? '0' : '-1') + '" data-action="artist-tab" data-artist="' + esc(a.id) + '" data-tab="' + tb[0] + '">' +
+          esc(t(tb[1])) + (tb[2] ? ' <span class="fcount">' + tb[2] + '</span>' : '') + '</button>').join('') +
+      '</div></nav><div class="film-panel" id="artist-panel" role="tabpanel" aria-labelledby="atab-' + tab + '">' + panel + '</div></article>';
+  };
+
+  /* página da música */
+  V.song = function (a, s) {
+    const vs = A.songVersions(a, s);
+    const rare = vs.filter(A.isRare).length;
+    const rows = vs.map((v) => {
+      const x = v.session && A.recording(a, v.session);
+      const title = L(v.title) || t('mt_' + v.type);
+      const meta = [L(v.place), v.source_type ? t('msrc_' + v.source_type) : '', v.length, v.track ? t('mu_track', { n: v.track }) : '', L(v.by)].filter(Boolean).join(' · ');
+      const listen = x && x.archive ? playBtn({ id: x.archive.id, file: v.file, title: s.title, sub: a.name + ' · ' + title + ' · ' + A.fmtDate(v.date) }) + iaLink(x.archive.id) : '';
+      return '<article class="mver mt-' + esc(v.type) + '" id="mv-' + esc(v.id) + '">' +
+        '<div class="mver-head">' + mtBadge(v.type) + '<h3>' + esc(title) + '</h3><span class="vrow-date">' + esc(A.fmtDate(v.date)) + '</span>' + (v.community ? ' <span class="chip community">' + esc(t('fp_community')) + '</span>' : '') + '</div>' +
+        (meta ? '<p class="mver-meta">' + esc(meta) + '</p>' : '') +
+        '<p class="badges">' + (v.availability ? '<span class="chip mav-' + esc(v.availability) + '">' + esc(t('mav_' + v.availability)) + '</span>' : '') +
+          (v.type === 'studio' ? '<span class="chip">' + esc(t('mu_studio_ref')) + '</span>' : '') + '</p>' +
+        (L(v.summary) ? '<p class="vrow-sum">' + esc(L(v.summary)) + '</p>' : '') +
+        (L(v.trackNote) ? '<p class="vrow-sum muted">' + esc(L(v.trackNote)) + '</p>' : '') +
+        ((v.differences || []).length ? '<ul class="diffs">' + v.differences.map((d) => '<li>' + esc(L(d)) + '</li>').join('') + '</ul>' : '') +
+        '<p class="sess-actions">' + listen + (x ? '<a class="link-chip" href="' + esc(artistHref(a, 'gravacoes', x.id)) + '">' + esc(t('mu_from_session', { x: L(x.title) + ' (' + A.fmtDate(x.date) + ')' })) + '</a>' : '') + '</p>' +
+        (sourceLinks(v.src, v.src_urls) ? '<details class="vrow-more"><summary>' + esc(t('fp_sources')) + '</summary>' + sourceLinks(v.src, v.src_urls) + '</details>' : '') +
+      '</article>';
+    }).join('');
+    return '<article class="film song" style="' + artArt(a) + '">' +
+      '<header class="song-head sec"><p class="eyebrow"><a href="#musicas">' + esc(t('mu_title')) + '</a> / <a href="' + esc(artistHref(a)) + '">' + esc(a.name) + '</a></p>' +
+        '<h1>' + esc(s.title) + '</h1>' +
+        '<p class="badges">' + msChip(s.status) + (s.year ? '<span class="chip">' + esc(s.year) + '</span>' : '') +
+          '<span class="chip">' + esc(A.plural(rare, 'mu_one_rare', 'mu_n_rare')) + '</span></p>' +
+        (L(s.first) ? '<p class="film-alt">' + esc(t('mu_first', { x: L(s.first) })) + '</p>' : '') +
+        (L(s.note) ? '<p class="film-overview">' + esc(L(s.note)) + '</p>' : '') +
+        (sourceLinks(s.src) ? '<details class="vrow-more"><summary>' + esc(t('fp_sources')) + '</summary>' + sourceLinks(s.src) + '</details>' : '') +
+      '</header>' +
+      '<section class="sec"><div class="sec-head"><h2>' + esc(t('mu_versions')) + '</h2></div>' +
+        (rows ? '<div class="mver-list">' + rows + '</div>' : '<p class="muted">' + esc(t('mu_no_versions')) + '</p>') +
+        '<p><button class="btn small ghost" type="button" data-action="suggest" data-kind="music" data-artist="' + esc(a.id) + '" data-song="' + esc(s.id) + '">' + esc(t('nav_suggest')) + '</button></p>' +
+      '</section></article>';
+  };
+
   /* ---------------- comparação ---------------- */
   V.compareTable = function (items) {
     const cutName = (x) => { const c = x.film.cuts.find((k) => k.id === x.v.cut); return c ? esc(L(c.name)) : ''; };
@@ -762,6 +1005,11 @@
       '<section class="sec"><h2>' + esc(t('ab_score')) + '</h2><p>' + esc(t('ab_score_lead')) + '</p><dl class="legend-list">' +
         CRITERIA.map((c) => '<div><dt><b>' + esc(t('sc_' + c)) + '</b></dt><dd>' + esc(t('scd_' + c)) + '</dd></div>').join('') + '</dl></section>' +
       '<section class="sec"><h2>' + esc(t('ab_dubs')) + '</h2><p>' + esc(t('ab_dubs_lead')) + '</p></section>' +
+      '<section class="sec"><h2>' + esc(t('ab_music')) + '</h2><p>' + esc(t('ab_music_lead')) + '</p><dl class="legend-list">' +
+        A.MUSIC_TYPES.map((tp) => '<div><dt>' + mtBadge(tp) + '</dt><dd>' + esc(t('mtd_' + tp)) + '</dd></div>').join('') + '</dl>' +
+        '<p class="rel-more"><a href="https://archive.org/" target="_blank" rel="noopener noreferrer">Internet Archive' + ICON.ext + '</a> ' +
+        '<a href="https://musicbrainz.org/" target="_blank" rel="noopener noreferrer">MusicBrainz' + ICON.ext + '</a> ' +
+        '<a href="https://coverartarchive.org/" target="_blank" rel="noopener noreferrer">Cover Art Archive' + ICON.ext + '</a></p></section>' +
       '<section class="sec"><h2>' + esc(t('ab_data')) + '</h2><p>' + esc(t('ab_data_lead')) + '</p>' +
         '<p class="rel-more"><a href="https://www.blu-ray.com/" target="_blank" rel="noopener noreferrer">Blu-ray.com' + ICON.ext + '</a> ' +
         '<a href="https://www.dvdcompare.net/" target="_blank" rel="noopener noreferrer">DVDCompare' + ICON.ext + '</a></p></section>' +
@@ -797,6 +1045,7 @@
       html += '<div class="sr-group"><h3>' + esc(t('s_versions')) + '</h3>' + vers.map((x) =>
         '<a class="sr-item" href="#' + esc(x.film.id) + '" data-focus-version="' + esc(x.v.id) + '"><span class="sr-title">' + esc(L(x.v.name)) + '</span><span class="sr-sub"><span>' + esc(A.filmTitle(x.film)) + '</span><span>' + esc(t('type_' + x.v.type)) + '</span></span></a>').join('') + '</div>';
     }
+    html += musicSearch(fq);
     if (!films.length) {
       html += '<div class="sr-group"><p class="sr-none">' + esc(t('s_none', { q: q.trim() })) + '</p>' +
         '<button type="button" class="sr-action" data-action="tmdb-search" data-q="' + esc(q.trim()) + '">' + esc(t('s_tmdb_try', { q: q.trim() })) + '</button>' +

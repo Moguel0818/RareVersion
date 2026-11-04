@@ -1,5 +1,5 @@
 /**
- * AllMovieRelease — servidor no Google Apps Script (gratuito)
+ * RareVersion — servidor no Google Apps Script (gratuito)
  * ===========================================================
  * O que este script faz:
  *   1. Recebe as sugestões do site e guarda na aba "Sugestoes" (a fila de moderação).
@@ -10,7 +10,7 @@
  *      o que parecer lançamento de scan, restauração ou edição. Nada vai ao ar sem você aprovar.
  *
  * Instalação (o passo a passo detalhado está no README):
- *   1. Crie uma planilha no Google Sheets (ex.: "AllMovieRelease - banco").
+ *   1. Crie uma planilha no Google Sheets (ex.: "RareVersion - banco").
  *   2. Na planilha: Extensões → Apps Script. Apague o conteúdo e cole este arquivo inteiro.
  *   3. Escolha a função setup no menu e clique em Executar (autorize o acesso).
  *      A sua chave de administrador aparece no registro de execução. Guarde-a.
@@ -42,7 +42,7 @@ const FEEDS_PADRAO = [
 ].join('\n');
 const PALAVRAS_PADRAO = '35mm, 70mm, 16mm, scan, restoration, restored, restauração, restaurado, preservation, technicolor, print';
 
-const LINK_BLOQUEADO = /(magnet:|\.torrent\b|mega\.(nz|io)|mediafire\.|1fichier\.|rapidgator\.|uploaded\.net|zippyshare\.|transfer\.it|wetransfer\.|we\.tl\/|drive\.google\.com\/(file|uc)|dropbox\.com\/(s|scl)\/|pixeldrain\.|gofile\.io|krakenfiles\.|nitroflare\.|turbobit\.|filefactory\.|katfile\.|send\.cm|terabox\.|anonfiles\.|bayfiles\.|1337x\.|thepiratebay\.|rarbg\.|nyaa\.si|usenet|nzb)/i;
+const LINK_BLOQUEADO = /(magnet:|\.torrent\b|mega\.(nz|io)|mediafire\.|1fichier\.|rapidgator\.|uploaded\.net|zippyshare\.|transfer\.it|wetransfer\.|we\.tl\/|drive\.google\.com\/(file|uc)|dropbox\.com\/(s|scl)\/|pixeldrain\.|gofile\.io|krakenfiles\.|nitroflare\.|turbobit\.|filefactory\.|katfile\.|send\.cm|terabox\.|anonfiles\.|bayfiles\.|1337x\.|thepiratebay\.|rarbg\.|nyaa\.si|usenet|nzb|archive\.org\/download\/|\.(flac|mp3|wav|m4a|ogg|mkv|mp4|avi|iso|zip|rar|7z)(\?|#|$))/i;
 const MAX_SUGESTOES_10MIN = 40;   // limite geral contra spam
 const MAX_NOVOS_POR_FEED = 10;    // por rodada do radar
 
@@ -97,7 +97,7 @@ function doGet(e) {
         return json_(tmdb_('movie/' + id, { language: idioma_(p.lang) }, 21600));
       }
       case 'ping':
-        return json_({ ok: true, app: 'AllMovieRelease' });
+        return json_({ ok: true, app: 'RareVersion' });
       default:
         return json_({ ok: false, error: 'acao_desconhecida' });
     }
@@ -134,7 +134,7 @@ function doPost(e) {
 /* ------------------------------------------------------------------ */
 function sugerir_(b) {
   if (b.website) return { ok: true }; // campo-armadilha preenchido = robô; finge que deu certo
-  if (['film', 'version', 'correction'].indexOf(b.tipo) < 0) return { ok: false, error: 'tipo_invalido' };
+  if (['film', 'version', 'correction', 'music'].indexOf(b.tipo) < 0) return { ok: false, error: 'tipo_invalido' };
   const bruto = JSON.stringify(b);
   if (bruto.length > 12000) return { ok: false, error: 'grande_demais' };
   if (LINK_BLOQUEADO.test(bruto)) return { ok: false, error: 'link_de_download' };
@@ -207,7 +207,7 @@ function decidir_(b) {
 // Adição direta pela moderação (ex.: filme novo escolhido no TMDB)
 function adicionar_(b) {
   const it = b.item || {};
-  if (['film', 'version', 'version_new_film', 'correction'].indexOf(it.tipo) < 0) return { ok: false, error: 'tipo_invalido' };
+  if (['film', 'version', 'version_new_film', 'correction', 'music'].indexOf(it.tipo) < 0) return { ok: false, error: 'tipo_invalido' };
   const json = JSON.stringify(it.dados && typeof it.dados === 'object' ? it.dados : {});
   if (json.length > 45000) return { ok: false, error: 'grande_demais' };
   const lock = LockService.getScriptLock();
@@ -305,7 +305,7 @@ function radar_() {
   let novos = 0;
   feeds_().forEach((f) => {
     try {
-      const resp = UrlFetchApp.fetch(f.url, { muteHttpExceptions: true, followRedirects: true, headers: { 'User-Agent': 'AllMovieRelease-radar/1.0' } });
+      const resp = UrlFetchApp.fetch(f.url, { muteHttpExceptions: true, followRedirects: true, headers: { 'User-Agent': 'RareVersion-radar/1.0' } });
       if (resp.getResponseCode() !== 200) { erros.push(f.url + ' → HTTP ' + resp.getResponseCode()); return; }
       let doFeed = 0;
       itensFeed_(resp.getContentText()).slice(0, 50).forEach((it) => {

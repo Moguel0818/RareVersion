@@ -1,4 +1,4 @@
-/* AllMovieRelease — inicialização, rotas, busca, sugestões, comparação e eventos */
+/* RareVersion — inicialização, rotas, busca, sugestões, comparação e eventos */
 (function () {
   'use strict';
   const A = window.AMR;
@@ -11,8 +11,10 @@
 
   A.state = {
     compare: new Set(), compareFilm: null, guideNeed: {}, typeFilter: {}, newsFilter: 'fan', pendingFocus: null, route: '',
-    filmTab: {}, scoreSel: {}, relFormat: {}, relCountry: {}, galLang: {}, galShow: {}, lb: null
+    filmTab: {}, scoreSel: {}, relFormat: {}, relCountry: {}, galLang: {}, galShow: {}, lb: null,
+    artistTab: {}, songFilter: {}
   };
+  const ARTIST_TABS = ['musicas', 'gravacoes', 'discografia'];
 
   const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/>' +
     '<path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
@@ -26,12 +28,13 @@
     '<rect x="24" y="4" width="2.6" height="2.4" rx=".6"/><rect x="24" y="9.8" width="2.6" height="2.4" rx=".6"/><rect x="24" y="15.6" width="2.6" height="2.4" rx=".6"/></g></svg>';
 
   /* ---------------- moldura do site ---------------- */
-  function siteName() { return A.cfg('SITE_NAME') || 'AllMovieRelease'; }
+  function siteName() { return A.cfg('SITE_NAME') || 'RareVersion'; }
 
   function header() {
     const r = A.state.route;
-    const nav = [['', 'nav_home'], ['filmes', 'nav_films'], ['novos', 'nav_new'], ['sobre', 'nav_about']].map((n) =>
-      '<a href="#' + n[0] + '"' + ((r === n[0] || (n[0] === '' && r === '')) ? ' aria-current="page"' : '') + '>' + esc(t(n[1])) + '</a>').join('');
+    const base = String(r).split('/')[0];
+    const nav = [['', 'nav_home'], ['filmes', 'nav_films'], ['musicas', 'nav_music'], ['novos', 'nav_new'], ['sobre', 'nav_about']].map((n) =>
+      '<a href="#' + n[0] + '"' + (base === n[0] ? ' aria-current="page"' : '') + '>' + esc(t(n[1])) + '</a>').join('');
     return '<a class="skip" href="#main">' + (A.lang === 'pt' ? 'Pular para o conteúdo' : 'Skip to content') + '</a>' +
       '<header class="topbar"><div class="topbar-inner">' +
         '<a class="brand" href="#">' + BRAND_MARK + '<span>' + esc(siteName()) + '</span></a>' +
@@ -79,7 +82,18 @@
             '<label><input type="radio" name="kind" value="version" checked> ' + esc(t('sg_kind_version')) + '</label>' +
             '<label><input type="radio" name="kind" value="film"> ' + esc(t('sg_kind_film')) + '</label>' +
             '<label><input type="radio" name="kind" value="fix"> ' + esc(t('sg_kind_fix')) + '</label>' +
+            '<label><input type="radio" name="kind" value="music"> ' + esc(t('sg_kind_music')) + '</label>' +
           '</fieldset>' +
+          '<div class="kgroup" data-kinds="music">' +
+            '<div class="row2"><label><span>' + esc(t('sg_artist')) + ' *</span><input name="martist" maxlength="120" list="dl-artists" autocomplete="off"></label>' +
+            '<label><span>' + esc(t('sg_song')) + ' *</span><input name="msong" maxlength="160" list="dl-songs" autocomplete="off"></label></div>' +
+            '<datalist id="dl-artists">' + A.music.artists.map((a) => '<option value="' + esc(a.name) + '">').join('') + '</datalist>' +
+            '<datalist id="dl-songs">' + A.music.artists.map((a) => a.songs.map((x) => '<option value="' + esc(x.title) + '">').join('')).join('') + '</datalist>' +
+            '<div class="row2"><label><span>' + esc(t('sg_mtype')) + '</span><select name="mtype">' + ['demo', 'live', 'session', 'alternate', 'remix', 'studio'].map((tp) => '<option value="' + tp + '">' + esc(t('mt_' + tp)) + '</option>').join('') + '</select></label>' +
+            '<label class="narrow"><span>' + esc(t('sg_vyear')) + '</span><input name="myear" maxlength="10" placeholder="1984-03-01"></label></div>' +
+            '<label><span>' + esc(t('sg_mplace')) + '</span><input name="mplace" maxlength="160"></label>' +
+            '<label><span>' + esc(t('sg_desc')) + '</span><textarea name="mdesc" rows="3" maxlength="1500"></textarea></label>' +
+          '</div>' +
           '<div class="kgroup" data-kinds="film">' +
             '<div class="row2"><label><span>' + esc(t('sg_film_title')) + ' *</span><input name="ftitle" maxlength="160"></label>' +
             '<label class="narrow"><span>' + esc(t('sg_year')) + '</span><input name="fyear" inputmode="numeric" maxlength="4"></label></div>' +
@@ -146,6 +160,12 @@
       '<main id="main" tabindex="-1"></main>' +
       footer() + dialogs() +
       '<div class="cmp-tray" id="cmp-tray" hidden></div>' +
+      '<div class="dock" id="dock" hidden><div class="dock-inner">' +
+        '<div class="dock-meta"><span class="dock-now">' + esc(t('mu_now')) + '</span><b id="dock-title"></b><span id="dock-sub"></span></div>' +
+        '<div class="dock-frame" id="dock-frame"></div>' +
+        '<div class="dock-actions"><a id="dock-link" class="link-chip" href="https://archive.org/" target="_blank" rel="noopener noreferrer">Internet Archive</a>' +
+        '<button type="button" class="icon-btn" data-action="dock-close" aria-label="' + esc(t('mu_dock_close')) + '">&times;</button></div>' +
+      '</div></div>' +
       '<div class="toasts" id="toasts" aria-live="polite"></div>';
   }
 
@@ -154,8 +174,31 @@
     let h = '';
     try { h = decodeURIComponent((window.location.hash || '').replace(/^#/, '')); } catch (e) { h = ''; }
     const parts = h.split('/');
+    if (parts[0] === 'musicas' && parts[1]) {
+      if (!parts[2] || ARTIST_TABS.indexOf(parts[2]) >= 0) return { base: 'musicas/' + parts[1], tab: parts[2] || '', focus: parts[3] || '' };
+      return { base: 'musicas/' + parts[1] + '/' + parts[2], tab: '', focus: '' };
+    }
     const base = parts[0] === 'inicio' ? '' : parts[0];
-    return { base, tab: parts[1] || '' };
+    return { base, tab: parts[1] || '', focus: '' };
+  }
+
+  function routeArtist() {
+    const p = A.state.route.split('/');
+    return p[0] === 'musicas' && p[1] && !p[2] ? A.artist(p[1]) : null;
+  }
+  function setArtistTab(aid, tab) {
+    A.state.artistTab[aid] = tab;
+    const h = '#musicas/' + aid + (tab && tab !== 'musicas' ? '/' + tab : '');
+    try { if (window.location.hash !== h) history.replaceState(null, '', h); } catch (e) { /* sem history (prévia) */ }
+    A.rerender();
+    const bar = document.getElementById('artist-tabs');
+    if (bar) { const top = bar.getBoundingClientRect().top; if (top < 0) window.scrollTo(0, window.scrollY + top); }
+    maybeLoadDisco();
+  }
+  function maybeLoadDisco() {
+    const a = routeArtist();
+    if (!a || V.artistTab(a) !== 'discografia' || A.mb.get(a)) return;
+    A.mb.load(a).then(() => { const b = routeArtist(); if (b === a && V.artistTab(a) === 'discografia') A.rerender(); });
   }
 
   // Troca a aba do filme sem recarregar a página; o endereço fica compartilhável (#filme/aba)
@@ -183,6 +226,14 @@
 
   function viewFor(r) {
     if (r === '') return V.home();
+    if (r === 'musicas') return V.musicHome();
+    if (r.indexOf('musicas/') === 0) {
+      const p = r.split('/');
+      const a = A.artist(p[1]);
+      if (!a) return V.notFound();
+      if (p[2]) { const so = A.song(a, p[2]); return so ? V.song(a, so) : V.notFound(); }
+      return V.artist(a);
+    }
     if (r === 'filmes') return V.films();
     if (r === 'novos') return V.news();
     if (r === 'sobre') return V.about();
@@ -192,8 +243,14 @@
   }
 
   function titleFor(r) {
-    const names = { '': '', filmes: t('nav_films'), novos: t('nw_title'), sobre: t('nav_about'), admin: t('nav_admin') };
+    const names = { '': '', filmes: t('nav_films'), novos: t('nw_title'), sobre: t('nav_about'), admin: t('nav_admin'), musicas: t('mu_title') };
     let page = names[r];
+    if (page === undefined && r.indexOf('musicas/') === 0) {
+      const p = r.split('/');
+      const a = A.artist(p[1]);
+      const so = a && p[2] ? A.song(a, p[2]) : null;
+      page = so ? so.title + ' — ' + a.name : a ? a.name : t('nf_title');
+    }
     if (page === undefined) { const f = A.film(r); page = f ? A.filmTitle(f) : t('nf_title'); }
     return page ? page + ' · ' + siteName() : siteName();
   }
@@ -201,7 +258,7 @@
   function updateNav() {
     document.querySelectorAll('.mainnav a').forEach((a) => {
       const target = (a.getAttribute('href') || '').replace(/^#/, '');
-      if (target === A.state.route) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      if (target === A.state.route.split('/')[0]) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
   }
 
@@ -216,6 +273,12 @@
       if (cr.tab && tabs.indexOf(cr.tab) >= 0) A.state.filmTab[film.id] = cr.tab;
       else if (changedPage) A.state.filmTab[film.id] = tabs[0];
     }
+    const art = routeArtist();
+    if (art) {
+      if (cr.tab) A.state.artistTab[art.id] = cr.tab;
+      else if (changedPage) A.state.artistTab[art.id] = 'musicas';
+      if (cr.focus) A.state.pendingFocus = { session: cr.focus };
+    }
     if (changedPage && A.state.compareFilm && A.state.compareFilm !== r) { A.state.compare.clear(); A.state.compareFilm = null; }
     const main = $('#main');
     main.innerHTML = viewFor(r);
@@ -226,11 +289,19 @@
     if (A.state.pendingFocus) {
       const pf = A.state.pendingFocus;
       A.state.pendingFocus = null;
-      requestAnimationFrame(() => (pf.version ? focusVersion(pf.version) : focusSection(pf.section)));
+      requestAnimationFrame(() => (pf.session ? focusSession(pf.session) : pf.version ? focusVersion(pf.version) : focusSection(pf.section)));
     } else if (changedPage) {
       window.scrollTo(0, 0);
     }
     maybeLoadGallery();
+    maybeLoadDisco();
+  }
+
+  function focusSession(id) {
+    const el = document.getElementById('s-' + id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    flash(el);
   }
 
   // Redesenha a tela atual sem perder a posição de rolagem
@@ -357,6 +428,8 @@
     if (opts.title) form.elements.ftitle.value = opts.title;
     if (opts.year) form.elements.fyear.value = opts.year;
     form.elements.ftmdb.value = opts.tmdb || '';
+    if (opts.artist) { const a = A.artist(opts.artist); if (a) form.elements.martist.value = a.name; }
+    if (opts.song && opts.artist) { const so = A.song(A.artist(opts.artist), opts.song); if (so) form.elements.msong.value = so.title; }
     syncKind(form);
     const first = form.querySelector('.kgroup:not([hidden]) input, .kgroup:not([hidden]) select');
     if (first) setTimeout(() => first.focus(), 30);
@@ -369,12 +442,27 @@
     const val = (n) => String((f[n] && f[n].value) || '').trim();
     const setMsg = (text, cls) => { msg.textContent = text; msg.className = 'form-msg' + (cls ? ' ' + cls : ''); };
     const link = val('link');
-    const allText = [link, val('vdesc'), val('fix'), val('vname'), val('ftitle')].join(' ');
+    const allText = [link, val('vdesc'), val('fix'), val('vname'), val('ftitle'), val('mdesc'), val('mplace')].join(' ');
     if (A.isBlockedLink(allText)) { setMsg(t('sg_err_link'), 'error'); return; }
     if (link && !A.safeUrl(link)) { setMsg(t('sg_err_link'), 'error'); return; }
 
     let payload = null;
-    if (kind === 'film') {
+    if (kind === 'music') {
+      if (!val('martist') || !val('msong')) { setMsg(t('sg_err_required'), 'error'); return; }
+      const fold = (x) => A.fold(x).replace(/[’']/g, '');
+      const art = A.music.artists.find((a) => fold(a.name) === fold(val('martist')));
+      const so = art ? art.songs.find((x) => fold(x.title) === fold(val('msong'))) : null;
+      const dados = {
+        version: {
+          id: A.slug((art ? art.id : val('martist')) + '-' + val('msong') + '-' + val('mtype') + '-' + val('myear')).slice(0, 70),
+          type: val('mtype') || 'live', date: val('myear'), title: { pt: val('mplace'), en: val('mplace') },
+          summary: { pt: val('mdesc'), en: val('mdesc') }, src_urls: link ? [link] : []
+        }
+      };
+      if (art) dados.artist_id = art.id; else dados.artist = { id: A.slug(val('martist')), name: val('martist') };
+      if (so) dados.song_id = so.id; else dados.song = { id: A.slug(val('msong')), title: val('msong'), status: 'unreleased' };
+      payload = { tipo: 'music', film_id: '', titulo: val('martist') + ': ' + val('msong') + ' (' + t('mt_' + (val('mtype') || 'live')) + ')', dados };
+    } else if (kind === 'film') {
       if (!val('ftitle')) { setMsg(t('sg_err_required'), 'error'); return; }
       const year = parseInt(val('fyear'), 10) || null;
       const tmdb = parseInt(val('ftmdb'), 10) || null;
@@ -486,7 +574,7 @@
       case 'suggest':
         e.preventDefault();
         hideSearch();
-        openSuggest({ kind: el.dataset.kind, film: el.dataset.film, title: el.dataset.title, year: el.dataset.year, tmdb: el.dataset.tmdb });
+        openSuggest({ kind: el.dataset.kind, film: el.dataset.film, title: el.dataset.title, year: el.dataset.year, tmdb: el.dataset.tmdb, artist: el.dataset.artist, song: el.dataset.song });
         break;
       case 'close-dialog':
         closeDialog(el.closest('dialog'));
@@ -572,6 +660,38 @@
         A.toast(t('st_covers_cleared'));
         A.rerender();
         break;
+      case 'artist-tab':
+        setArtistTab(el.dataset.artist, el.dataset.tab);
+        { const b = document.getElementById('atab-' + el.dataset.tab); if (b) b.focus({ preventScroll: true }); }
+        break;
+      case 'song-filter':
+        A.state.songFilter[el.dataset.artist] = el.dataset.filter;
+        A.rerender();
+        break;
+      case 'disco-retry': {
+        const a = A.artist(el.dataset.artist);
+        if (a) { A.mb.reset(a); maybeLoadDisco(); A.rerender(); }
+        break;
+      }
+      case 'play': {
+        const src = A.ia.embed(el.dataset.ia, el.dataset.file || '');
+        if (!src) break;
+        const dock = $('#dock');
+        $('#dock-frame').innerHTML = '<iframe src="' + esc(src) + '" title="' + esc(el.dataset.title || 'Internet Archive') + '" allow="autoplay; fullscreen" loading="lazy"></iframe>';
+        dock.classList.toggle('playlist', !el.dataset.file);
+        $('#dock-title').textContent = el.dataset.title || '';
+        $('#dock-sub').textContent = el.dataset.sub || '';
+        $('#dock-link').href = A.ia.details(el.dataset.ia);
+        dock.hidden = false;
+        document.body.classList.add('has-dock');
+        document.body.classList.toggle('dock-tall', !el.dataset.file);
+        break;
+      }
+      case 'dock-close':
+        $('#dock-frame').innerHTML = '';
+        $('#dock').hidden = true;
+        document.body.classList.remove('has-dock', 'dock-tall');
+        break;
       case 'gal-lang':
         A.state.galLang[el.dataset.film] = el.dataset.lang;
         delete A.state.galShow[el.dataset.film + ':posters'];
@@ -648,7 +768,7 @@
   function refreshSettingsStatus() {
     const el = $('#st-status');
     if (!el) return;
-    const mode = A.tmdb.userKey() ? 'user' : (A.cfg('APPS_SCRIPT_URL') || A.cfg('TMDB_API_KEY') ? 'proxy' : 'off');
+    const mode = A.tmdb.userKey() ? 'user' : A.cfg('APPS_SCRIPT_URL') ? 'proxy' : A.cfg('TMDB_API_KEY') ? 'site' : 'off';
     el.textContent = t('st_status_' + mode);
     el.className = 'st-status s-' + mode;
     const rm = $('#st-remove');
@@ -785,7 +905,7 @@
       A.rebuild();
       A.rerender();
     } catch (e) {
-      console.warn('[AllMovieRelease] Itens aprovados indisponíveis:', e);
+      console.warn('[RareVersion] Itens aprovados indisponíveis:', e);
     }
     if (A.tmdb.mode() !== 'off') {
       let changed = false;

@@ -1,5 +1,5 @@
 /*
- * AllMovieRelease — catálogo curado
+ * RareVersion — catálogo curado de filmes
  * ------------------------------------------------------------
  * Este arquivo é o "banco de dados" base do site. Edite à vontade.
  * Itens aprovados pela fila de moderação são somados a ele em tempo real;

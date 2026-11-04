@@ -1,4 +1,4 @@
-/* AllMovieRelease — núcleo: utilidades, idioma, dados, TMDB e servidor (Apps Script) */
+/* RareVersion — núcleo: utilidades, idioma, dados, TMDB e servidor (Apps Script) */
 (function () {
   'use strict';
   const AMR = (window.AMR = window.AMR || {});
@@ -47,6 +47,7 @@
     if (s == null) s = I18N.pt && I18N.pt[key];
     if (s == null) s = key;
     if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(vars[k]); });
+    if (s.indexOf('{site}') >= 0) s = s.split('{site}').join(AMR.cfg('SITE_NAME') || 'RareVersion');
     return s;
   };
   // Texto localizado: aceita "texto" ou { pt, en }
@@ -85,7 +86,7 @@
   };
 
   /* ---------------- links proibidos (download) ---------------- */
-  AMR.BLOCKED_LINK = /(magnet:|\.torrent\b|mega\.(nz|io)|mediafire\.|1fichier\.|rapidgator\.|uploaded\.net|zippyshare\.|transfer\.it|wetransfer\.|we\.tl\/|drive\.google\.com\/(file|uc)|dropbox\.com\/(s|scl)\/|pixeldrain\.|gofile\.io|krakenfiles\.|nitroflare\.|turbobit\.|filefactory\.|katfile\.|send\.cm|terabox\.|anonfiles\.|bayfiles\.|1337x\.|thepiratebay\.|rarbg\.|nyaa\.si|usenet|nzb)/i;
+  AMR.BLOCKED_LINK = /(magnet:|\.torrent\b|mega\.(nz|io)|mediafire\.|1fichier\.|rapidgator\.|uploaded\.net|zippyshare\.|transfer\.it|wetransfer\.|we\.tl\/|drive\.google\.com\/(file|uc)|dropbox\.com\/(s|scl)\/|pixeldrain\.|gofile\.io|krakenfiles\.|nitroflare\.|turbobit\.|filefactory\.|katfile\.|send\.cm|terabox\.|anonfiles\.|bayfiles\.|1337x\.|thepiratebay\.|rarbg\.|nyaa\.si|usenet|nzb|archive\.org\/download\/|\.(flac|mp3|wav|m4a|ogg|mkv|mp4|avi|iso|zip|rar|7z)(\?|#|$))/i;
   AMR.isBlockedLink = (s) => AMR.BLOCKED_LINK.test(String(s || ''));
 
   /* ---------------- rede ---------------- */
@@ -171,6 +172,7 @@
       if (c) f.tmdbx = c;
     });
     AMR.films = films;
+    AMR.rebuildMusic();
   };
   AMR.film = (id) => filmIndex[id] || null;
   AMR.findVersion = (id) => versionIndex[id] || null;
@@ -389,6 +391,158 @@
   AMR.languageName = (code) => {
     const n = displayName('language', String(code || '').toLowerCase());
     return n ? n.charAt(0).toUpperCase() + n.slice(1) : '';
+  };
+
+  /* ---------------- músicas ---------------- */
+  const MBASE = AMR.clone(window.AMR_MUSIC || { artists: [], sources: {} });
+  Object.keys(MBASE.sources || {}).forEach((k) => { if (!AMR.sources[k]) AMR.sources[k] = MBASE.sources[k]; });
+  const MTYPES = ['studio', 'demo', 'live', 'session', 'alternate', 'remix'];
+  const MSTATUS = ['released', 'bside', 'unreleased'];
+  AMR.MUSIC_TYPES = MTYPES;
+  AMR.music = { artists: [], updated: MBASE.updated || '' };
+  let artistIndex = {};
+
+  function normArtist(a) {
+    a.songs = Array.isArray(a.songs) ? a.songs : [];
+    a.sessions = Array.isArray(a.sessions) ? a.sessions : [];
+    a.members = Array.isArray(a.members) ? a.members : [];
+    a.links = a.links && typeof a.links === 'object' ? a.links : {};
+    a.songs.forEach((s) => {
+      s.status = MSTATUS.indexOf(s.status) >= 0 ? s.status : 'released';
+      s.versions = Array.isArray(s.versions) ? s.versions : [];
+      s.versions.forEach((v) => { v.type = MTYPES.indexOf(v.type) >= 0 ? v.type : 'live'; });
+    });
+    a.sessions.forEach((x) => {
+      x.kind = MTYPES.indexOf(x.kind) >= 0 ? x.kind : 'live';
+      x.tracks = Array.isArray(x.tracks) ? x.tracks : [];
+    });
+    return a;
+  }
+
+  // Itens de música aprovados na moderação: { artist | artist_id, song | song_id, version, session }
+  function applyMusic(item, artists, index) {
+    const d = item.dados || {};
+    let a = index[d.artist_id || (d.artist && d.artist.id) || ''];
+    if (!a && d.artist && (d.artist.name || d.artist.id)) {
+      a = normArtist(Object.assign({ community: true }, AMR.clone(d.artist), { id: d.artist.id || AMR.slug(d.artist.name) }));
+      artists.push(a);
+      index[a.id] = a;
+    }
+    if (!a) return;
+    if (d.session && typeof d.session === 'object') {
+      const x = Object.assign({ community: true }, AMR.clone(d.session));
+      x.id = x.id || 'c-' + item.id;
+      if (!a.sessions.some((y) => y.id === x.id)) a.sessions.push(x);
+    }
+    let s = null;
+    const sid = d.song_id || (d.song && (d.song.id || AMR.slug(d.song.title || '')));
+    if (sid) s = a.songs.find((y) => y.id === sid);
+    if (!s && d.song && d.song.title) {
+      s = Object.assign({ community: true, versions: [] }, AMR.clone(d.song), { id: sid });
+      a.songs.push(s);
+    }
+    if (s && d.version && typeof d.version === 'object') {
+      const v = Object.assign({ community: true }, AMR.clone(d.version));
+      v.id = v.id || 'c-' + item.id;
+      if (!s.versions.some((y) => y.id === v.id)) s.versions.push(v);
+    }
+    normArtist(a);
+  }
+
+  AMR.rebuildMusic = () => {
+    const artists = AMR.clone(MBASE.artists || []).map(normArtist);
+    const index = {};
+    artists.forEach((a) => { index[a.id] = a; });
+    (AMR.approved || []).forEach((item) => {
+      if (item.tipo === 'music') { try { applyMusic(item, artists, index); } catch (e) { console.warn('Item de música ignorado', item, e); } }
+    });
+    artists.sort((p, q) => String(p.sort || p.name).localeCompare(String(q.sort || q.name)));
+    artistIndex = index;
+    AMR.music.artists = artists;
+  };
+  AMR.artist = (id) => artistIndex[id] || null;
+  AMR.song = (a, id) => (a ? a.songs.find((s) => s.id === id) || null : null);
+  AMR.recording = (a, id) => (a ? a.sessions.find((x) => x.id === id) || null : null);
+  AMR.sessionPlace = (x) => [x.venue, x.city].filter(Boolean).join(', ');
+
+  // Versões de uma música: as cadastradas nela + as faixas das gravações (shows, sessões, fitas)
+  AMR.songVersions = (a, s) => {
+    const out = s.versions.map((v) => Object.assign({}, v));
+    a.sessions.forEach((x) => x.tracks.forEach((tr) => {
+      if (tr.song !== s.id) return;
+      out.push({
+        id: x.id + '-' + tr.n, type: x.kind, date: x.date, session: x.id, track: tr.n, length: tr.length, file: tr.file,
+        trackNote: tr.note, title: x.title, place: AMR.sessionPlace(x), source_type: x.source_type,
+        availability: x.archive && x.archive.id ? 'archive' : x.availability || '', quality: x.quality, src: x.src, src_urls: x.src_urls
+      });
+    }));
+    out.sort((p, q) => (AMR.dateKey(p.date) || 9e9) - (AMR.dateKey(q.date) || 9e9));
+    return out;
+  };
+  AMR.isRare = (v) => v.type !== 'studio';
+
+  /* APIs de música, sem chave: MusicBrainz (dados abertos), Cover Art Archive (capas) e Internet Archive (gravações) */
+  async function fetchJson(url) {
+    const r = await fetchWithTimeout(url, { headers: { accept: 'application/json' } }, 12000);
+    if (!r.ok) throw new Error('http_' + r.status);
+    return r.json();
+  }
+  const normName = (x) => AMR.fold(x).replace(/[’'`´]/g, '').trim();
+  const MB = 'https://musicbrainz.org/ws/2/';
+  const mbMem = {};
+  AMR.mb = {
+    async artistId(a) {
+      if (a.mbid) return a.mbid;
+      const key = 'amr.mb.id.' + a.id;
+      const c = AMR.storage.get(key, null);
+      if (c) return c;
+      const r = await fetchJson(MB + 'artist?fmt=json&limit=5&query=' + encodeURIComponent('artist:"' + a.name.replace(/[’]/g, "'") + '"'));
+      const list = r.artists || [];
+      const best = list.find((x) => normName(x.name) === normName(a.name)) || list[0];
+      if (!best) throw new Error('mb_not_found');
+      AMR.storage.set(key, best.id);
+      return best.id;
+    },
+    get(a) {
+      if (mbMem[a.id]) return mbMem[a.id];
+      const c = AMR.storage.get('amr.mb.rg.' + a.id, null);
+      if (c && c.d && Date.now() - (c.t || 0) < 7 * 864e5) { mbMem[a.id] = { state: 'ok', data: c.d, mbid: c.mbid }; return mbMem[a.id]; }
+      return null;
+    },
+    async load(a) {
+      const cur = this.get(a);
+      if (cur && cur.state !== 'error') return cur;
+      mbMem[a.id] = { state: 'loading' };
+      try {
+        const id = await this.artistId(a);
+        const r = await fetchJson(MB + 'release-group?fmt=json&limit=100&artist=' + encodeURIComponent(id));
+        const d = (r['release-groups'] || []).map((g) => ({ id: g.id, title: g.title, date: g['first-release-date'] || '', type: g['primary-type'] || '', sec: g['secondary-types'] || [] }));
+        mbMem[a.id] = { state: 'ok', data: d, mbid: id };
+        AMR.storage.set('amr.mb.rg.' + a.id, { t: Date.now(), d, mbid: id });
+      } catch (e) {
+        mbMem[a.id] = { state: 'error' };
+      }
+      return mbMem[a.id];
+    },
+    reset(a) { delete mbMem[a.id]; AMR.storage.del('amr.mb.rg.' + a.id); }
+  };
+  AMR.caa = (rgid, size) => 'https://coverartarchive.org/release-group/' + encodeURIComponent(rgid) + '/front-' + (size || 250);
+  const okIa = (id) => /^[\w.-]+$/.test(String(id || ''));
+  AMR.ia = {
+    ok: okIa,
+    // Player oficial do Internet Archive: a gravação inteira (lista de faixas) ou uma faixa só
+    embed(id, file) {
+      if (!okIa(id)) return '';
+      return 'https://archive.org/embed/' + id + (file ? '/' + String(file).split('/').map(encodeURIComponent).join('/') : '&playlist=1');
+    },
+    details(id) { return okIa(id) ? 'https://archive.org/details/' + id : ''; },
+    // "https://archive.org/details/abc" ou "abc" -> "abc"
+    parse(input) {
+      const m = String(input || '').trim().match(/archive\.org\/(?:details|embed|metadata)\/([\w.-]+)/i);
+      const id = m ? m[1] : String(input || '').trim();
+      return okIa(id) ? id : '';
+    },
+    metadata(id) { return fetchJson('https://archive.org/metadata/' + encodeURIComponent(id)); }
   };
 
   /* ---------------- servidor (Apps Script) e modo demonstração ---------------- */

@@ -1,4 +1,4 @@
-/* AllMovieRelease — painel de moderação (fila de aprovação, radar, catálogo, exportação) */
+/* RareVersion — painel de moderação (fila de aprovação, radar, catálogo, exportação) */
 (function () {
   'use strict';
   const A = window.AMR;
@@ -52,11 +52,11 @@
     if (!S.data && !S.loading && !S.error) setTimeout(load, 0);
     const pending = S.data ? S.data.pending.length : 0;
     const versions = A.allVersions().length;
-    const tabs = [['queue', 'ad_tab_queue', pending], ['history', 'ad_tab_history'], ['radar', 'ad_tab_radar'], ['catalog', 'ad_tab_catalog'], ['export', 'ad_tab_export'], ['config', 'ad_tab_config']];
+    const tabs = [['queue', 'ad_tab_queue', pending], ['history', 'ad_tab_history'], ['radar', 'ad_tab_radar'], ['catalog', 'ad_tab_catalog'], ['music', 'ad_tab_music'], ['export', 'ad_tab_export'], ['config', 'ad_tab_config']];
     const tabBar = '<div class="ad-tabs" role="tablist">' + tabs.map((tb) =>
       '<button type="button" role="tab" class="ad-tab' + (S.tab === tb[0] ? ' on' : '') + '" aria-selected="' + (S.tab === tb[0]) + '" data-action="adm-tab" data-tab="' + tb[0] + '">' +
         esc(t(tb[1])) + (tb[2] ? ' <span class="count">' + tb[2] + '</span>' : '') + '</button>').join('') + '</div>';
-    const body = { queue: queueTab, history: historyTab, radar: radarTab, catalog: catalogTab, export: exportTab, config: configTab }[S.tab] || queueTab;
+    const body = { queue: queueTab, history: historyTab, radar: radarTab, catalog: catalogTab, music: musicTab, export: exportTab, config: configTab }[S.tab] || queueTab;
     return '<section class="page admin">' + head +
       '<p class="ad-stats">' + esc(t('ad_stats', { f: A.films.length, v: versions, p: pending })) +
         (live ? ' <button type="button" class="link-btn" data-action="adm-logout">' + esc(t('ad_logout')) + '</button>' : '') + '</p>' +
@@ -74,6 +74,16 @@
   function preview(it) {
     const d = it.dados || {};
     const parts = [];
+    if (it.tipo === 'music') {
+      const a = A.artist(d.artist_id);
+      const so = a && d.song_id ? A.song(a, d.song_id) : null;
+      const who = (a && a.name) || (d.artist && d.artist.name) || '';
+      const what = (so && so.title) || (d.song && d.song.title) || '';
+      parts.push('<p><strong>' + esc(who) + (what ? ' — ' + esc(what) : '') + '</strong>' + (d.song && !so ? ' <span class="chip ms-unreleased">' + esc(t('ms_unreleased')) + '</span>' : '') + '</p>');
+      if (d.version) parts.push('<p class="badges">' + V.mtBadge(d.version.type || 'live') + (d.version.date ? '<span class="chip">' + esc(A.fmtDate(d.version.date)) + '</span>' : '') + (L(d.version.title) ? '<span class="chip">' + esc(L(d.version.title)) + '</span>' : '') + '</p>' + (L(d.version.summary) ? '<p>' + esc(L(d.version.summary)) + '</p>' : ''));
+      if (d.session) parts.push('<p class="badges">' + V.mtBadge(d.session.kind || 'live') + '<strong>' + esc(L(d.session.title)) + '</strong>' + (d.session.date ? '<span class="chip">' + esc(A.fmtDate(d.session.date)) + '</span>' : '') + '<span class="chip">' + esc(t('mu_tracks')) + ': ' + ((d.session.tracks || []).length) + '</span></p>');
+      return '<div class="qprev">' + parts.join('') + '</div>';
+    }
     if (d.film) parts.push('<p><strong>' + esc(L(d.film.title) || d.film.original_title || '') + '</strong> ' + (d.film.year ? '(' + esc(d.film.year) + ')' : '') + (d.film.tmdb ? ' <span class="muted">TMDB ' + esc(d.film.tmdb) + '</span>' : '') + '</p>');
     if (d.version) {
       parts.push('<p class="badges">' + V.typeBadge(d.version.type || 'official') + '<strong>' + esc(L(d.version.name)) + '</strong>' +
@@ -187,7 +197,7 @@
       return o;
     };
     const out = { schema: 1, updated: new Date().toISOString().slice(0, 10), films: A.films.map(clean), sources: A.sources };
-    return '/*\n * AllMovieRelease — catálogo exportado pela Moderação em ' + new Date().toISOString() + '\n * Formato dos campos: veja o README.\n */\nwindow.AMR_CATALOG = ' + JSON.stringify(out, null, 2) + ';\n';
+    return '/*\n * RareVersion — catálogo exportado pela Moderação em ' + new Date().toISOString() + '\n * Formato dos campos: veja o README.\n */\nwindow.AMR_CATALOG = ' + JSON.stringify(out, null, 2) + ';\n';
   }
 
   function exportTab() {
@@ -205,6 +215,152 @@
       '<label><span>' + esc(t('ad_cfg_tmdb')) + '</span><input name="tmdb" type="password" autocomplete="off" value="' + esc(A.tmdb.userKey()) + '"><small>' + esc(t('ad_cfg_tmdb_hint')) + '</small></label>' +
       '<button class="btn primary" type="submit">' + esc(t('ad_cfg_save')) + '</button></form>' +
       (A.backend.mode() === 'demo' ? '<p><button type="button" class="btn ghost" data-action="adm-reset">' + esc(t('ad_cfg_reset')) + '</button></p>' : '');
+  }
+
+  /* ---------------- músicas: importar do Internet Archive e exportar ---------------- */
+  function secs(x) {
+    if (x == null || x === '') return '';
+    if (/^\d+:\d\d(:\d\d)?$/.test(String(x))) return String(x).replace(/^0(\d:)/, '$1');
+    const n = Math.round(Number(x));
+    if (!n) return '';
+    const h = Math.floor(n / 3600), m = Math.floor((n % 3600) / 60), sec = n % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(sec).padStart(2, '0');
+  }
+  function guessSource(text) {
+    const x = String(text || '').toLowerCase();
+    if (/\bsbd\b|soundboard|mesa/.test(x)) return 'soundboard';
+    if (/\bfm\b|broadcast|radio|rádio/.test(x)) return 'fm';
+    if (/\baud\b|audience|plateia/.test(x)) return 'audience';
+    if (/\btv\b|television/.test(x)) return 'tv';
+    if (/demo|cassette|tape/.test(x)) return 'cassette';
+    return 'unknown';
+  }
+  async function iaImport(form) {
+    const fd = new FormData(form);
+    S.iaInput = String(fd.get('ia') || '');
+    S.iaArtist = String(fd.get('artist') || '');
+    S.iaError = '';
+    S.iaDraft = null;
+    const id = A.ia.parse(S.iaInput);
+    if (!id) { S.iaError = 'identificador inválido'; A.rerender(); return; }
+    A.toast(t('loading'));
+    try {
+      const m = await A.ia.metadata(id);
+      const md = (m && m.metadata) || null;
+      if (!md) throw new Error('item não encontrado');
+      const one = (v) => (Array.isArray(v) ? v[0] : v) || '';
+      let artistId = S.iaArtist;
+      let artistObj = null;
+      if (artistId === '__new') {
+        const name = String(fd.get('newartist') || one(md.creator) || '').trim();
+        if (!name) throw new Error(t('ad_mu_new_artist'));
+        artistId = A.slug(name);
+        artistObj = { id: artistId, name };
+      }
+      const a = A.artist(artistId);
+      const fold = (x) => A.fold(String(x || '')).replace(/^\d+[\s.)-]*/, '').replace(/[’'"?!.,()]/g, '').replace(/\s+/g, ' ').trim();
+      const audio = (m.files || []).filter((f) => f.source === 'original' && /\.(flac|mp3|ogg|wav|shn|m4a|aiff?)$/i.test(f.name || ''))
+        .sort((p, q) => (Number(p.track) || 0) - (Number(q.track) || 0) || String(p.name).localeCompare(String(q.name), undefined, { numeric: true }));
+      let matched = 0;
+      const tracks = audio.map((f, i) => {
+        const title = String(f.title || String(f.name).replace(/\.[^.]+$/, ''));
+        const so = a ? a.songs.find((x) => fold(x.title) === fold(title)) : null;
+        const tr = { n: parseInt(f.track, 10) || i + 1 };
+        if (so) { tr.song = so.id; matched++; } else tr.title = { pt: title, en: title };
+        const len = secs(f.length);
+        if (len) tr.length = len;
+        tr.file = f.name;
+        return tr;
+      });
+      const date = String(one(md.date) || '').slice(0, 10);
+      const venue = String(one(md.venue) || '');
+      const city = String(one(md.coverage) || '');
+      const source = [one(md.source), one(md.lineage), one(md.notes), one(md.title)].join(' ');
+      const title = String(one(md.title) || id);
+      const session = {
+        id: A.slug([artistId, date, venue || city].filter(Boolean).join('-')).slice(0, 70) || A.slug(id),
+        kind: String(fd.get('kind') || 'live'), date,
+        title: { pt: title, en: title }, venue, city,
+        source_type: guessSource(source),
+        lineage: { pt: String(one(md.lineage) || one(md.source) || ''), en: String(one(md.lineage) || one(md.source) || '') },
+        notes: { pt: '', en: '' },
+        archive: { id, added: String(one(md.addeddate) || one(md.publicdate) || '').slice(0, 10), collection: [].concat(md.collection || []).join(', ') },
+        tracks,
+        src_urls: [A.ia.details(id)]
+      };
+      const dados = Object.assign(artistObj ? { artist: artistObj } : { artist_id: artistId }, { session });
+      S.iaDraft = { matched, total: tracks.length, item: { tipo: 'music', titulo: (a ? a.name : artistObj.name) + ': ' + title, fonte_url: A.ia.details(id), dados } };
+    } catch (e) {
+      S.iaError = String((e && e.message) || e);
+    }
+    A.rerender();
+  }
+  async function iaAdd() {
+    const ta = document.getElementById('ad-ia-json');
+    if (!ta) return;
+    let item;
+    try { item = JSON.parse(ta.value); } catch (e) { A.toast('JSON: ' + e.message, 'error'); return; }
+    if (!item || item.tipo !== 'music' || !item.dados) { A.toast('JSON', 'error'); return; }
+    try {
+      await A.backend.adminAdd(S.key, item);
+      S.iaDraft = null;
+      A.toast(t('ad_mu_added'));
+      await reloadAll();
+    } catch (e) { A.toast(String((e && e.message) || e), 'error'); }
+  }
+  function buildMusicExport() {
+    const used = new Set();
+    const mark = (o) => { (o.src || []).forEach((k) => used.add(k)); (o.intro_src || []).forEach((k) => used.add(k)); };
+    const artists = A.music.artists.map((a) => {
+      const o = A.clone(a);
+      delete o.community;
+      mark(o);
+      (o.sessions || []).forEach((x) => { delete x.community; mark(x); });
+      (o.songs || []).forEach((so) => { delete so.community; mark(so); (so.versions || []).forEach((v) => { delete v.community; mark(v); }); });
+      return o;
+    });
+    const sources = {};
+    Array.from(used).sort().forEach((k) => { if (A.sources[k]) sources[k] = A.sources[k]; });
+    const out = { schema: 1, updated: new Date().toISOString().slice(0, 10), artists, sources };
+    return '/*\n * RareVersion — catálogo de músicas exportado pela Moderação em ' + new Date().toISOString() + '\n * Formato dos campos: veja a seção "Músicas" do README.\n */\nwindow.AMR_MUSIC = ' + JSON.stringify(out, null, 2) + ';\n';
+  }
+  function musicTab() {
+    const opts = A.music.artists.map((a) => '<option value="' + esc(a.id) + '"' + (S.iaArtist === a.id ? ' selected' : '') + '>' + esc(a.name) + '</option>').join('') +
+      '<option value="__new"' + (S.iaArtist === '__new' ? ' selected' : '') + '>' + esc(t('ad_mu_new_artist')) + '</option>';
+    let html = '<section class="ad-sec"><h3>' + esc(t('ad_mu_import')) + '</h3><p class="muted">' + esc(t('ad_mu_import_lead')) + '</p>' +
+      '<form class="grid-form" data-form="adm-ia">' +
+        '<label><span>' + esc(t('ad_mu_id')) + '</span><input name="ia" required placeholder="https://archive.org/details/…" value="' + esc(S.iaInput || '') + '"></label>' +
+        '<label><span>' + esc(t('ad_mu_artist')) + '</span><select name="artist">' + opts + '</select></label>' +
+        '<label><span>' + esc(t('ad_mu_new_artist')) + '</span><input name="newartist" maxlength="120"></label>' +
+        '<label><span>' + esc(t('ad_mu_kind')) + '</span><select name="kind">' + ['live', 'demo', 'session'].map((k) => '<option value="' + k + '">' + esc(t('mt_' + k)) + '</option>').join('') + '</select></label>' +
+        '<button class="btn primary" type="submit">' + esc(t('ad_mu_fetch')) + '</button></form>';
+    if (S.iaError) html += '<p class="error">' + esc(t('ad_mu_fail', { e: S.iaError })) + '</p>';
+    if (S.iaDraft) {
+      html += '<p class="chip ok">' + esc(t('ad_mu_match', { n: S.iaDraft.matched, t: S.iaDraft.total })) + '</p>' +
+        '<p class="muted">' + esc(t('ad_mu_preview')) + '</p>' +
+        '<label class="sr-only" for="ad-ia-json">JSON</label><textarea id="ad-ia-json" class="export" rows="14" spellcheck="false">' + esc(JSON.stringify(S.iaDraft.item, null, 2)) + '</textarea>' +
+        '<p class="actions"><button type="button" class="btn primary" data-action="adm-ia-add">' + esc(t('ad_mu_add')) + '</button></p>';
+    }
+    html += '</section><section class="ad-sec"><h3>' + esc(t('ad_mu_export')) + '</h3><p class="muted">' + esc(t('ad_mu_export_lead')) + '</p>' +
+      '<p class="actions"><button type="button" class="btn primary" data-action="adm-mu-copy">' + esc(t('ad_mu_copy')) + '</button>' +
+      (A.isTopWindow ? '<button type="button" class="btn ghost" data-action="adm-mu-dl">' + esc(t('ad_mu_dl')) + '</button>' : '') + '</p>' +
+      '<label class="sr-only" for="ad-mu-export">musica.js</label><textarea id="ad-mu-export" class="export" rows="10" readonly spellcheck="false">' + esc(buildMusicExport()) + '</textarea></section>';
+    return html;
+  }
+  async function copyFrom(id) {
+    const ta = document.getElementById(id);
+    if (!ta) return;
+    try { await navigator.clipboard.writeText(ta.value); A.toast(t('ad_copied')); }
+    catch (e) { ta.focus(); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e2) { ok = false; } A.toast(ok ? t('ad_copied') : t('ad_copy_fail'), ok ? '' : 'error'); }
+  }
+  function downloadText(text, name) {
+    const blob = new Blob([text], { type: 'text/javascript;charset=utf-8' });
+    const el = document.createElement('a');
+    el.href = URL.createObjectURL(blob);
+    el.download = name;
+    document.body.appendChild(el);
+    el.click();
+    setTimeout(() => { URL.revokeObjectURL(el.href); el.remove(); }, 500);
   }
 
   /* ---------------- ações ---------------- */
@@ -345,6 +501,15 @@
       case 'adm-copy':
         await copyExport();
         break;
+      case 'adm-ia-add':
+        await iaAdd();
+        break;
+      case 'adm-mu-copy':
+        await copyFrom('ad-mu-export');
+        break;
+      case 'adm-mu-dl':
+        downloadText(buildMusicExport(), 'musica.js');
+        break;
       case 'adm-download':
         downloadExport();
         break;
@@ -404,6 +569,8 @@
         A.toast(t('ad_cat_added'));
         await reloadAll();
       } catch (e) { A.toast(String((e && e.message) || e), 'error'); }
+    } else if (formName === 'adm-ia') {
+      await iaImport(form);
     } else if (formName === 'adm-config') {
       const cfg = A.storage.get('amr.cfg', {}) || {};
       const url = String(fd.get('url') || '').trim();

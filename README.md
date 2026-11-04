@@ -161,6 +161,7 @@ A parte de músicas fica em `#musicas` e segue a mesma ideia dos filmes: cada ve
 | `#musicas` | artistas, gravações recentes e músicas inéditas |
 | `#musicas/til-tuesday` | página do artista, aba **Músicas** (com filtros: inéditas, com demo, com ao vivo) |
 | `#musicas/til-tuesday/gravacoes` | aba **Gravações**: shows, sessões e fitas, com a lista de faixas e o player |
+| `#musicas/til-tuesday/galeria` | aba **Galeria**: fotos da banda, flyers, cartazes, ingressos e recortes, com filtro por tipo e visualização ampliada |
 | `#musicas/til-tuesday/discografia` | aba **Discografia**: lançamentos oficiais pelo MusicBrainz, com capas do Cover Art Archive |
 | `#musicas/til-tuesday/voices-carry` | página da música: todas as versões em ordem de data (estúdio, demo, ao vivo...) |
 
@@ -179,6 +180,19 @@ A parte de músicas fica em `#musicas` e segue a mesma ideia dos filmes: cada ve
 
 Visitantes também podem sugerir versões de músicas pelo botão **Sugerir** (tipo "Versão de música"); a sugestão cai na fila de aprovação.
 
+### Galeria do artista: enviar fotos e flyers
+O envio segue o modelo do Entre Margens: **link direto + crédito + moderação**. O site não recebe arquivos, só endereços de imagem.
+1. Na aba **Galeria** do artista, clique em **Enviar fotos e flyers** (você também usa esse caminho para as suas próprias fotos).
+2. Para cada imagem: cole o **link direto** (de file.garden, Imgur, Postimages: o endereço precisa abrir só a imagem, normalmente terminando em `.jpg`, `.png` ou `.webp`). Aparece uma prévia na hora; se a imagem não abrir, o formulário avisa. Depois escolha o tipo (foto da banda, flyer/cartaz, ingresso, recorte, outro), a data ou ano, a legenda, o crédito (quem fotografou ou fez a arte) e a fonte (página onde a imagem foi publicada).
+3. Dá para mandar até 10 imagens de uma vez, com **+ adicionar outra imagem**.
+4. **Seu nome** aparece como "Enviada por". O **contato** só aparece para a moderação: não vai para a lista pública de aprovados nem para o `musica.js` exportado.
+5. O envio cai na fila (`#admin`) com miniaturas. Ao aprovar, as imagens aparecem na Galeria. A primeira **foto da banda** vira o fundo da página do artista (para escolher outra, coloque `hero: true` nela).
+6. Para fixar de vez, exporte o `musica.js` (aba **Músicas** da moderação) e envie para `data/`.
+
+Regras mostradas no formulário: só fotos que a pessoa tirou ou que a banda divulgou publicamente; flyers, cartazes, ingressos e recortes são bem-vindos; nada de dados pessoais dos integrantes. Se uma imagem sair do ar depois, a grade mostra "Imagem indisponível" no lugar dela.
+
+O fundo da página do artista não mostra mais o ano (o ano grande no fundo fica só nos filmes).
+
 ### Formato do `data/musica.js`
 ```js
 window.AMR_MUSIC = {
@@ -192,6 +206,14 @@ window.AMR_MUSIC = {
     intro: { pt: "...", en: "..." }, intro_src: ["tt_wiki"],
     links: { wikipedia: "...", archive: "...", musicbrainz: "...", discogs: "...", setlistfm: "...", concerts: "..." },
     wanted: { pt: "Procura-se: ...", en: "Wanted: ..." },
+    photos: [{                         // aba Galeria (link direto; o site não hospeda imagens)
+      id: "tt-1985-bastidores", url: "https://i.imgur.com/xxxx.jpg",
+      kind: "photo",                   // photo | flyer | ticket | press | other
+      date: "1985", caption: { pt: "...", en: "..." },
+      credit: "Quem fotografou", source: "https://página-onde-foi-publicada",
+      added_by: "Moguel", added: "2026-11-04",
+      hero: true                       // opcional: usar como fundo da página do artista
+    }],
     sessions: [{                       // gravações com várias faixas: shows, sessões de rádio/TV, fitas demo
       id: "tt-1984-03-01-spit", kind: "live",        // live | demo | session | alternate | remix
       date: "1984-03-01", title: { pt: "Ao vivo no Spit, Boston", en: "Live at Spit, Boston" },

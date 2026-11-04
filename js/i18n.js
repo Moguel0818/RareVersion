@@ -235,7 +235,24 @@ window.AMR_I18N = {
     ad_mu_add: "Adicionar ao catálogo", ad_mu_added: "Gravação adicionada.", ad_mu_fail: "Não foi possível ler o item: {e}",
     ad_mu_match: "{n} de {t} faixas ligadas a músicas do catálogo.", ad_mu_preview: "Confira e ajuste antes de adicionar:",
     ad_mu_export: "Exportar músicas", ad_mu_export_lead: "Gera o data/musica.js com o catálogo de músicas e tudo o que foi aprovado. Envie para a pasta data/ do repositório.",
-    ad_mu_copy: "Copiar musica.js", ad_mu_dl: "Baixar musica.js", ad_mu_new_artist: "Novo artista (nome)"
+    ad_mu_copy: "Copiar musica.js", ad_mu_dl: "Baixar musica.js", ad_mu_new_artist: "Novo artista (nome)",
+    atab_gallery: "Galeria",
+    pk_photo: "Fotos", pk_flyer: "Flyers e cartazes", pk_ticket: "Ingressos", pk_press: "Recortes", pk_other: "Outros",
+    pk1_photo: "Foto da banda", pk1_flyer: "Flyer ou cartaz", pk1_ticket: "Ingresso", pk1_press: "Recorte de jornal ou revista", pk1_other: "Outro",
+    ph_lead: "Fotos da banda, flyers, cartazes, ingressos e recortes enviados por fãs e pela moderação.",
+    ph_empty: "Ainda não há imagens deste artista. Envie a primeira!",
+    ph_send: "Enviar fotos e flyers", ph_title: "Enviar fotos e flyers",
+    ph_credit: "Foto/arte: {x}", ph_by: "Enviada por {x}", ph_source: "Fonte", ph_open: "Abrir imagem", ph_broken: "Imagem indisponível",
+    ph_artist: "Artista", ph_new_artist: "Outro artista (digite o nome)", ph_new_artist_opt: "Outro artista…",
+    ph_img: "Imagem {n}", ph_url: "Link direto da imagem", ph_kind: "Tipo", ph_date: "Data ou ano", ph_caption: "Legenda",
+    ph_credit_l: "Crédito (quem fotografou ou fez a arte)", ph_source_l: "Fonte (link de onde a imagem foi publicada)",
+    ph_add_row: "+ adicionar outra imagem", ph_remove: "Remover",
+    ph_yourname: "Seu nome ou apelido (aparece como “enviada por”)", ph_contact: "Contato (só a moderação vê)",
+    ph_policy: "Use links diretos de imagem (file.garden, Imgur, Postimages): o endereço deve abrir só a imagem. Envie fotos que você tirou ou que a banda divulgou publicamente; flyers, cartazes, ingressos e recortes são bem-vindos. Não envie dados pessoais dos integrantes. Tudo passa pela moderação antes de aparecer.",
+    ph_bad: "Não consegui abrir essa imagem. Use o link direto (o que termina em .jpg, .png ou .webp).",
+    ph_ok: "Imagem carregada.", ph_err_none: "Coloque pelo menos um link de imagem.",
+    ph_err_url: "Um dos links não é válido (precisa começar com https://).", ph_err_artist: "Escolha o artista ou digite o nome.",
+    ph_n: "{n} imagens", ph_one: "1 imagem"
   },
 
   en: {
@@ -473,6 +490,23 @@ window.AMR_I18N = {
     ad_mu_add: "Add to catalog", ad_mu_added: "Recording added.", ad_mu_fail: "Couldn't read the item: {e}",
     ad_mu_match: "{n} of {t} tracks linked to catalog songs.", ad_mu_preview: "Check and adjust before adding:",
     ad_mu_export: "Export music", ad_mu_export_lead: "Builds data/musica.js with the music catalog and everything approved. Upload it to the repository's data/ folder.",
-    ad_mu_copy: "Copy musica.js", ad_mu_dl: "Download musica.js", ad_mu_new_artist: "New artist (name)"
+    ad_mu_copy: "Copy musica.js", ad_mu_dl: "Download musica.js", ad_mu_new_artist: "New artist (name)",
+    atab_gallery: "Gallery",
+    pk_photo: "Photos", pk_flyer: "Flyers and posters", pk_ticket: "Tickets", pk_press: "Clippings", pk_other: "Other",
+    pk1_photo: "Band photo", pk1_flyer: "Flyer or poster", pk1_ticket: "Ticket", pk1_press: "Newspaper or magazine clipping", pk1_other: "Other",
+    ph_lead: "Band photos, flyers, posters, tickets and clippings sent by fans and the moderators.",
+    ph_empty: "No images of this artist yet. Send the first one!",
+    ph_send: "Send photos and flyers", ph_title: "Send photos and flyers",
+    ph_credit: "Photo/art: {x}", ph_by: "Sent by {x}", ph_source: "Source", ph_open: "Open image", ph_broken: "Image unavailable",
+    ph_artist: "Artist", ph_new_artist: "Another artist (type the name)", ph_new_artist_opt: "Another artist…",
+    ph_img: "Image {n}", ph_url: "Direct image link", ph_kind: "Type", ph_date: "Date or year", ph_caption: "Caption",
+    ph_credit_l: "Credit (who took the photo or made the art)", ph_source_l: "Source (link where the image was published)",
+    ph_add_row: "+ add another image", ph_remove: "Remove",
+    ph_yourname: "Your name or nickname (shown as “sent by”)", ph_contact: "Contact (moderators only)",
+    ph_policy: "Use direct image links (file.garden, Imgur, Postimages): the address must open just the image. Send photos you took or that the band released publicly; flyers, posters, tickets and clippings are welcome. Don't send members' personal data. Everything goes through moderation before it shows up.",
+    ph_bad: "Couldn't open this image. Use the direct link (the one ending in .jpg, .png or .webp).",
+    ph_ok: "Image loaded.", ph_err_none: "Add at least one image link.",
+    ph_err_url: "One of the links isn't valid (it must start with https://).", ph_err_artist: "Pick the artist or type the name.",
+    ph_n: "{n} images", ph_one: "1 image"
   }
 };

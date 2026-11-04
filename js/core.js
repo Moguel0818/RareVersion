@@ -399,6 +399,7 @@
   const MTYPES = ['studio', 'demo', 'live', 'session', 'alternate', 'remix'];
   const MSTATUS = ['released', 'bside', 'unreleased'];
   AMR.MUSIC_TYPES = MTYPES;
+  AMR.PHOTO_KINDS = ['photo', 'flyer', 'ticket', 'press', 'other'];
   AMR.music = { artists: [], updated: MBASE.updated || '' };
   let artistIndex = {};
 
@@ -407,6 +408,8 @@
     a.sessions = Array.isArray(a.sessions) ? a.sessions : [];
     a.members = Array.isArray(a.members) ? a.members : [];
     a.links = a.links && typeof a.links === 'object' ? a.links : {};
+    a.photos = (Array.isArray(a.photos) ? a.photos : []).filter((p) => p && AMR.safeUrl(p.url) && !AMR.isBlockedLink(p.url));
+    a.photos.forEach((p) => { p.kind = AMR.PHOTO_KINDS.indexOf(p.kind) >= 0 ? p.kind : 'photo'; });
     a.songs.forEach((s) => {
       s.status = MSTATUS.indexOf(s.status) >= 0 ? s.status : 'released';
       s.versions = Array.isArray(s.versions) ? s.versions : [];
@@ -433,6 +436,13 @@
       const x = Object.assign({ community: true }, AMR.clone(d.session));
       x.id = x.id || 'c-' + item.id;
       if (!a.sessions.some((y) => y.id === x.id)) a.sessions.push(x);
+    }
+    if (Array.isArray(d.photos)) {
+      a.photos = Array.isArray(a.photos) ? a.photos : [];
+      d.photos.forEach((p, i) => {
+        if (!p || typeof p !== 'object' || a.photos.some((q) => q.url === p.url)) return;
+        a.photos.push(Object.assign({ community: true }, AMR.clone(p), { id: p.id || 'c-' + item.id + '-' + i }));
+      });
     }
     let s = null;
     const sid = d.song_id || (d.song && (d.song.id || AMR.slug(d.song.title || '')));

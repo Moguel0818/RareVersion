@@ -832,7 +832,7 @@
   };
 
   /* página do artista */
-  const ARTIST_TABS = ['musicas', 'gravacoes', 'discografia'];
+  const ARTIST_TABS = ['musicas', 'gravacoes', 'galeria', 'discografia'];
   V.ARTIST_TABS = ARTIST_TABS;
   V.artistTab = function (a) { const tb = A.state.artistTab[a.id]; return ARTIST_TABS.indexOf(tb) >= 0 ? tb : 'musicas'; };
   function linksBlock(a) {
@@ -911,14 +911,58 @@
           '<span class="rg-title">' + esc(r.title) + '</span><span class="rg-year">' + esc(A.year(r.date) || '') + '</span></a>').join('') + '</div></div>').join('') +
       '<p class="gal-credit muted">' + esc(t('mu_disco_credit')) + (m.mbid ? ' <a href="https://musicbrainz.org/artist/' + esc(m.mbid) + '" target="_blank" rel="noopener noreferrer">MusicBrainz' + ICON.ext + '</a>' : '') + '</p></section>';
   }
+  /* galeria de fotos, flyers e ingressos (enviados por link e aprovados na moderação) */
+  V.photoList = function (a) {
+    const k = A.state.photoKind[a.id] || 'all';
+    return a.photos.filter((p) => k === 'all' || p.kind === k);
+  };
+  function photoMeta(p) {
+    return [t('pk1_' + p.kind), p.date ? A.fmtDate(p.date) : ''].filter(Boolean).join(' · ');
+  }
+  function photosPanel(a) {
+    const send = '<button type="button" class="btn small primary" data-action="photo-send" data-artist="' + esc(a.id) + '">' + esc(t('ph_send')) + '</button>';
+    const head = '<div class="sec-head ph-head"><p class="sec-lead">' + esc(t('ph_lead')) + '</p>' + send + '</div>';
+    if (!a.photos.length) return '<section class="sec" id="sec-photos">' + head + '<div class="gal-off"><p>' + esc(t('ph_empty')) + '</p>' + send + '</div><p class="mu-policy muted">' + esc(t('ph_policy')) + '</p></section>';
+    const kinds = A.PHOTO_KINDS.filter((k) => a.photos.some((p) => p.kind === k));
+    let cur = A.state.photoKind[a.id] || 'all';
+    if (cur !== 'all' && kinds.indexOf(cur) < 0) cur = 'all';
+    const chip = (k, n) => '<button type="button" class="fchip' + (k === cur ? ' on' : '') + '" aria-pressed="' + (k === cur) + '" data-action="photo-kind" data-artist="' + esc(a.id) + '" data-kind="' + k + '">' + esc(k === 'all' ? t('mu_all') : t('pk_' + k)) + ' <span class="fcount">' + n + '</span></button>';
+    const chips = kinds.length > 1 ? '<div class="fchips" role="group">' + chip('all', a.photos.length) + kinds.map((k) => chip(k, a.photos.filter((p) => p.kind === k).length)).join('') + '</div>' : '';
+    const list = V.photoList(a);
+    return '<section class="sec" id="sec-photos">' + head + chips + '<div class="ph-grid">' + list.map((p, i) =>
+      '<figure class="ph">' +
+        '<button type="button" class="ph-btn" data-action="photo-open" data-artist="' + esc(a.id) + '" data-i="' + i + '" aria-label="' + esc(t('gl_open') + ': ' + (L(p.caption) || t('pk1_' + p.kind))) + '">' +
+          '<img src="' + esc(p.url) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"><span class="ph-broken">' + esc(t('ph_broken')) + '</span></button>' +
+        '<figcaption>' + (L(p.caption) ? '<span class="ph-cap">' + esc(L(p.caption)) + '</span>' : '') +
+          '<span class="ph-meta">' + esc(photoMeta(p)) + (p.credit ? ' · ' + esc(t('ph_credit', { x: p.credit })) : '') + '</span>' +
+          (p.community ? ' <span class="chip community">' + esc(t('fp_community')) + '</span>' : '') + '</figcaption></figure>').join('') + '</div>' +
+      '<p class="mu-policy muted">' + esc(t('ph_policy')) + '</p></section>';
+  }
+  V.photoLightbox = function (a, i) {
+    const list = V.photoList(a);
+    const p = list[i];
+    if (!p) return '';
+    const meta = [photoMeta(p), t('gl_of', { i: i + 1, n: list.length })].join(' · ');
+    const src = A.safeUrl(p.source) ? '<a class="btn small ghost" href="' + esc(p.source) + '" target="_blank" rel="noopener noreferrer">' + esc(t('ph_source')) + ICON.ext + '</a>' : '';
+    return '<div class="lb-stage lb-photo"><img src="' + esc(p.url) + '" alt="' + esc(L(p.caption) || a.name) + '" referrerpolicy="no-referrer"></div>' +
+      '<div class="lb-bar"><div class="lb-nav">' +
+        '<button type="button" class="icon-btn" data-action="gal-step" data-dir="-1" aria-label="' + esc(t('prev')) + '"' + (i <= 0 ? ' disabled' : '') + '>' + ICON.left + '</button>' +
+        '<p class="lb-meta">' + esc(meta) + '</p>' +
+        '<button type="button" class="icon-btn" data-action="gal-step" data-dir="1" aria-label="' + esc(t('next')) + '"' + (i >= list.length - 1 ? ' disabled' : '') + '>' + ICON.right + '</button></div>' +
+        (L(p.caption) ? '<p class="lb-cap">' + esc(L(p.caption)) + '</p>' : '') +
+        '<p class="lb-meta">' + [p.credit ? esc(t('ph_credit', { x: p.credit })) : '', p.added_by ? esc(t('ph_by', { x: p.added_by })) : ''].filter(Boolean).join(' · ') + '</p>' +
+        '<div class="lb-actions">' + src + '<a class="btn small ghost" href="' + esc(p.url) + '" target="_blank" rel="noopener noreferrer">' + esc(t('ph_open')) + ICON.ext + '</a></div></div>';
+  };
+
   V.artist = function (a) {
     const tab = V.artistTab(a);
     const st = artistStats(a);
     const members = a.members.map((m) => esc(m.name) + (L(m.role) ? ' <span class="muted">(' + esc(L(m.role)) + ')</span>' : '')).join(' · ');
-    const tabs = [['musicas', 'atab_songs', a.songs.length], ['gravacoes', 'atab_sessions', a.sessions.length], ['discografia', 'atab_disco', 0]];
-    const panel = tab === 'gravacoes' ? sessionsPanel(a) : tab === 'discografia' ? discoPanel(a) : songsPanel(a);
+    const tabs = [['musicas', 'atab_songs', a.songs.length], ['gravacoes', 'atab_sessions', a.sessions.length], ['galeria', 'atab_gallery', a.photos.length], ['discografia', 'atab_disco', 0]];
+    const panel = tab === 'gravacoes' ? sessionsPanel(a) : tab === 'discografia' ? discoPanel(a) : tab === 'galeria' ? photosPanel(a) : songsPanel(a);
+    const heroPhoto = a.photos.find((p) => p.kind === 'photo' && p.hero) || a.photos.find((p) => p.kind === 'photo');
     return '<article class="film artist" style="' + artArt(a) + '">' +
-      '<header class="film-hero"><div class="hero-bg" aria-hidden="true"><span class="hero-year">' + esc(String(a.years || '').slice(0, 4)) + '</span></div>' +
+      '<header class="film-hero"><div class="hero-bg" aria-hidden="true">' + (heroPhoto ? '<img src="' + esc(heroPhoto.url) + '" alt="" decoding="async" referrerpolicy="no-referrer">' : '') + '</div>' +
         '<div class="film-hero-inner"><div class="film-side"><div class="film-poster disc-poster"><span class="acard-disc big" aria-hidden="true"><span class="acard-label">' + esc(a.name.replace(/^[’']/, '').charAt(0)) + '</span></span></div></div>' +
           '<div class="film-head"><p class="eyebrow"><a href="#musicas">' + esc(t('mu_title')) + '</a></p><h1>' + esc(a.name) + '</h1>' +
             '<p class="meta">' + [a.years, L(a.origin)].filter(Boolean).map((x) => '<span>' + esc(x) + '</span>').join('') + '</p>' +

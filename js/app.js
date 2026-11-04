@@ -12,9 +12,9 @@
   A.state = {
     compare: new Set(), compareFilm: null, guideNeed: {}, typeFilter: {}, newsFilter: 'fan', pendingFocus: null, route: '',
     filmTab: {}, scoreSel: {}, relFormat: {}, relCountry: {}, galLang: {}, galShow: {}, lb: null,
-    artistTab: {}, songFilter: {}
+    artistTab: {}, songFilter: {}, photoKind: {}
   };
-  const ARTIST_TABS = ['musicas', 'gravacoes', 'discografia'];
+  const ARTIST_TABS = ['musicas', 'gravacoes', 'galeria', 'discografia'];
 
   const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/>' +
     '<path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
@@ -70,6 +70,121 @@
   function filmOptions() {
     return '<option value="">' + esc(t('sg_choose')) + '</option>' +
       A.films.slice().sort((a, b) => A.filmTitle(a).localeCompare(A.filmTitle(b))).map((f) => '<option value="' + esc(f.id) + '">' + esc(A.filmTitle(f) + ' (' + f.year + ')') + '</option>').join('');
+  }
+
+  /* envio de fotos e flyers (modelo do Entre Margens: link direto + crédito + moderação) */
+  function photoRow(n) {
+    return '<fieldset class="ph-row" data-row="' + n + '"><legend>' + esc(t('ph_img', { n })) + '</legend>' +
+      '<div class="ph-row-grid"><div class="ph-prev" aria-hidden="true"><img alt="" referrerpolicy="no-referrer" data-keep="1" hidden></div>' +
+      '<div class="ph-fields">' +
+        '<label><span>' + esc(t('ph_url')) + ' *</span><input name="purl" type="url" maxlength="500" placeholder="https://i.imgur.com/….jpg" autocomplete="off" spellcheck="false"></label>' +
+        '<p class="ph-status small" role="status" aria-live="polite"></p>' +
+        '<div class="row2"><label><span>' + esc(t('ph_kind')) + '</span><select name="pkind">' + A.PHOTO_KINDS.map((k) => '<option value="' + k + '">' + esc(t('pk1_' + k)) + '</option>').join('') + '</select></label>' +
+        '<label class="narrow"><span>' + esc(t('ph_date')) + '</span><input name="pdate" maxlength="10" placeholder="1985-06-14"></label></div>' +
+        '<label><span>' + esc(t('ph_caption')) + '</span><input name="pcap" maxlength="300"></label>' +
+        '<div class="row2 eq"><label><span>' + esc(t('ph_credit_l')) + '</span><input name="pcredit" maxlength="120"></label>' +
+        '<label><span>' + esc(t('ph_source_l')) + '</span><input name="psource" type="url" maxlength="500" placeholder="https://"></label></div>' +
+        (n > 1 ? '<button type="button" class="btn small ghost" data-action="photo-row-del">' + esc(t('ph_remove')) + '</button>' : '') +
+      '</div></div></fieldset>';
+  }
+  function photoDialog() {
+    return '<dialog id="dlg-photo" class="dlg" aria-labelledby="ph-h">' +
+      '<form class="sg-form" data-form="photo" novalidate>' +
+        '<div class="dlg-head"><h2 id="ph-h">' + esc(t('ph_title')) + '</h2>' +
+          '<button type="button" class="icon-btn" data-action="close-dialog" aria-label="' + esc(t('close')) + '">&times;</button></div>' +
+        '<div class="dlg-body">' +
+          '<p class="policy">' + esc(t('ph_policy')) + '</p>' +
+          '<div class="row2 eq"><label><span>' + esc(t('ph_artist')) + ' *</span><select name="partist">' +
+            A.music.artists.map((a) => '<option value="' + esc(a.id) + '">' + esc(a.name) + '</option>').join('') +
+            '<option value="__new">' + esc(t('ph_new_artist_opt')) + '</option></select></label>' +
+          '<label class="ph-newart" hidden><span>' + esc(t('ph_new_artist')) + '</span><input name="pnewartist" maxlength="120"></label></div>' +
+          '<div class="ph-rows">' + photoRow(1) + '</div>' +
+          '<p><button type="button" class="btn small ghost" data-action="photo-row-add">' + esc(t('ph_add_row')) + '</button></p>' +
+          '<div class="row2 eq"><label><span>' + esc(t('ph_yourname')) + '</span><input name="pname" maxlength="80" autocomplete="nickname"></label>' +
+          '<label><span>' + esc(t('ph_contact')) + '</span><input name="pcontact" maxlength="80"></label></div>' +
+          '<div class="hp" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>' +
+          (A.backend.mode() === 'demo' ? '<p class="muted small">' + esc(t('sg_demo')) + '</p>' : '') +
+          '<p class="form-msg" role="status" aria-live="polite"></p>' +
+        '</div>' +
+        '<div class="dlg-foot"><button type="button" class="btn ghost" data-action="close-dialog">' + esc(t('cancel')) + '</button>' +
+          '<button type="submit" class="btn primary">' + esc(t('sg_send')) + '</button></div>' +
+      '</form></dialog>';
+  }
+  function openPhotoDialog(artistId) {
+    const d = openDialog('dlg-photo');
+    if (!d) return;
+    const form = d.querySelector('form');
+    form.reset();
+    form.querySelector('.ph-rows').innerHTML = photoRow(1);
+    form.querySelector('.form-msg').textContent = '';
+    if (artistId && A.artist(artistId)) form.elements.partist.value = artistId;
+    syncPhotoArtist(form);
+    setTimeout(() => { const u = form.querySelector('input[name="purl"]'); if (u) u.focus(); }, 30);
+  }
+  function syncPhotoArtist(form) {
+    const isNew = form.elements.partist.value === '__new';
+    form.querySelector('.ph-newart').hidden = !isNew;
+  }
+  function previewPhoto(input) {
+    const row = input.closest('.ph-row');
+    if (!row) return;
+    const img = row.querySelector('.ph-prev img');
+    const st = row.querySelector('.ph-status');
+    const url = A.safeUrl(input.value.trim());
+    st.className = 'ph-status small';
+    if (!input.value.trim()) { img.hidden = true; img.removeAttribute('src'); st.textContent = ''; return; }
+    if (!url || A.isBlockedLink(url)) { img.hidden = true; st.textContent = t('ph_err_url'); st.classList.add('error'); return; }
+    img.onload = () => { img.hidden = false; st.textContent = t('ph_ok'); st.className = 'ph-status small ok'; };
+    img.onerror = () => { img.hidden = true; st.textContent = t('ph_bad'); st.className = 'ph-status small error'; };
+    img.src = url;
+  }
+  async function submitPhoto(form) {
+    const f = form.elements;
+    const msg = form.querySelector('.form-msg');
+    const setMsg = (text, cls) => { msg.textContent = text; msg.className = 'form-msg' + (cls ? ' ' + cls : ''); };
+    const v = (el) => String((el && el.value) || '').trim();
+    const artistSel = v(f.partist);
+    const art = artistSel !== '__new' ? A.artist(artistSel) : null;
+    const newName = v(f.pnewartist);
+    if (!art && !newName) { setMsg(t('ph_err_artist'), 'error'); return; }
+    const name = v(f.pname);
+    const today = new Date().toISOString().slice(0, 10);
+    const photos = [];
+    for (const row of form.querySelectorAll('.ph-row')) {
+      const q = (n) => v(row.querySelector('[name="' + n + '"]'));
+      const raw = q('purl');
+      if (!raw) continue;
+      const url = A.safeUrl(raw);
+      const src = q('psource');
+      if (!url || A.isBlockedLink(url) || (src && (!A.safeUrl(src) || A.isBlockedLink(src)))) { setMsg(t('ph_err_url'), 'error'); return; }
+      const cap = q('pcap');
+      photos.push({
+        url, kind: A.PHOTO_KINDS.indexOf(q('pkind')) >= 0 ? q('pkind') : 'photo', date: q('pdate'),
+        caption: cap ? { pt: cap, en: cap } : undefined, credit: q('pcredit'), source: src ? A.safeUrl(src) : '',
+        added_by: name, added: today
+      });
+    }
+    if (!photos.length) { setMsg(t('ph_err_none'), 'error'); return; }
+    if (v(f.website)) { setMsg(t('sg_sent'), 'ok'); return; }
+    const dados = { photos };
+    if (art) dados.artist_id = art.id; else dados.artist = { id: A.slug(newName), name: newName };
+    const who = art ? art.name : newName;
+    const payload = {
+      tipo: 'music', film_id: '', titulo: who + ': ' + (photos.length === 1 ? t('ph_one') : t('ph_n', { n: photos.length })) + ' (' + t('atab_gallery') + ')',
+      fonte_url: photos[0].source || '', contato: v(f.pcontact), dados
+    };
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      const r = await A.backend.suggest(payload);
+      setMsg(r && r.demo ? t('sg_sent') + ' ' + t('sg_demo') : t('sg_sent'), 'ok');
+      setTimeout(() => closeDialog(form.closest('dialog')), 1800);
+      if (A.state.route === 'admin') { A.adminState.data = null; A.rerender(); }
+    } catch (e) {
+      setMsg(t('sg_err_send'), 'error');
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   function dialogs() {
@@ -148,6 +263,7 @@
         '</div>' +
         '<div class="dlg-foot"><button type="button" class="btn ghost" data-action="close-dialog">' + esc(t('close')) + '</button></div>' +
       '</form></dialog>' +
+      photoDialog() +
       '<dialog id="dlg-image" class="dlg lightbox" aria-labelledby="lb-h">' +
         '<div class="dlg-head"><h2 id="lb-h" class="sr-only">' + esc(t('gl_title')) + '</h2>' +
           '<button type="button" class="icon-btn" data-action="close-dialog" aria-label="' + esc(t('close')) + '">&times;</button></div>' +
@@ -374,6 +490,7 @@
 
   /* ---------------- busca ---------------- */
   let searchTimer = null;
+  let photoTimer = null;
   function showSearch(html) {
     const p = $('#search-panel');
     if (!p) return;
@@ -708,6 +825,35 @@
         if (f) { A.gallery.reset(); maybeLoadGallery(); A.rerender(); }
         break;
       }
+      case 'photo-kind':
+        A.state.photoKind[el.dataset.artist] = el.dataset.kind;
+        A.rerender();
+        break;
+      case 'photo-open':
+        A.state.lb = { artist: el.dataset.artist, i: Number(el.dataset.i) || 0 };
+        openDialog('dlg-image');
+        renderLightbox();
+        break;
+      case 'photo-send':
+        openPhotoDialog(el.dataset.artist);
+        break;
+      case 'photo-row-add': {
+        const box = el.closest('form').querySelector('.ph-rows');
+        const n = box.querySelectorAll('.ph-row').length;
+        if (n >= 10) break;
+        box.insertAdjacentHTML('beforeend', photoRow(n + 1));
+        const inp = box.lastElementChild.querySelector('input[name="purl"]');
+        if (inp) inp.focus();
+        break;
+      }
+      case 'photo-row-del': {
+        const row = el.closest('.ph-row');
+        const box = row && row.parentElement;
+        if (!row) break;
+        row.remove();
+        box.querySelectorAll('.ph-row').forEach((r, i) => { r.dataset.row = i + 1; r.querySelector('legend').textContent = t('ph_img', { n: i + 1 }); });
+        break;
+      }
       case 'gal-open':
         A.state.lb = { film: el.dataset.film, kind: el.dataset.kind, i: Number(el.dataset.i) || 0 };
         openDialog('dlg-image');
@@ -742,16 +888,18 @@
   /* ---------------- galeria ampliada ---------------- */
   function renderLightbox() {
     const lb = A.state.lb;
-    const f = lb && A.film(lb.film);
     const body = $('#lb-body');
-    if (!f || !body) return;
-    body.innerHTML = V.lightbox(f, lb.kind, lb.i);
+    if (!lb || !body) return;
+    if (lb.artist) { const a = A.artist(lb.artist); if (a) body.innerHTML = V.photoLightbox(a, lb.i); return; }
+    const f = A.film(lb.film);
+    if (f) body.innerHTML = V.lightbox(f, lb.kind, lb.i);
   }
   function stepLightbox(dir) {
     const lb = A.state.lb;
-    const f = lb && A.film(lb.film);
-    if (!f || !dir) return;
-    const n = V.galleryList(f, lb.kind).length;
+    if (!lb || !dir) return;
+    let n = 0;
+    if (lb.artist) { const a = A.artist(lb.artist); if (!a) return; n = V.photoList(a).length; }
+    else { const f = A.film(lb.film); if (!f) return; n = V.galleryList(f, lb.kind).length; }
     const next = Math.max(0, Math.min(n - 1, lb.i + dir));
     if (next === lb.i) return;
     lb.i = next;
@@ -830,6 +978,10 @@
       A.rerender();
       const sel = document.querySelector('select[data-action="rel-country"]');
       if (sel) sel.focus({ preventScroll: true });
+    } else if (el.name === 'partist' && el.closest('form[data-form="photo"]')) {
+      syncPhotoArtist(el.closest('form'));
+    } else if (el.name === 'purl') {
+      previewPhoto(el);
     } else if (el.name === 'kind' && el.closest('form[data-form="suggest"]')) {
       syncKind(el.closest('form'));
     }
@@ -842,11 +994,13 @@
     const name = form.dataset.form;
     if (name === 'suggest') submitSuggest(form);
     else if (name === 'settings') saveSettings(form);
+    else if (name === 'photo') submitPhoto(form);
     else if (A.adminSubmit) A.adminSubmit(name, form);
   }
 
   function onInput(e) {
     if (e.target.id === 'st-key') { settingsMsg(''); return; }
+    if (e.target.name === 'purl') { clearTimeout(photoTimer); const el = e.target; photoTimer = setTimeout(() => previewPhoto(el), 450); return; }
     if (e.target.id !== 'q') return;
     const q = e.target.value;
     clearTimeout(searchTimer);
@@ -892,6 +1046,9 @@
   function onImgError(e) {
     const el = e.target;
     if (el && el.tagName === 'IMG') {
+      if (el.dataset.keep) return;
+      const ph = el.closest('.ph-btn');
+      if (ph) { ph.classList.add('is-broken'); return; }
       const p = el.closest('.poster');
       if (p) p.classList.remove('has-img');
       el.remove();

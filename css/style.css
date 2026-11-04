@@ -881,3 +881,44 @@ body.dock-tall .toasts { bottom: 300px; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   .frame:hover .frame-pic, .poster:hover { transform: none; }
 }
+
+/* ---------- galeria do artista: fotos, flyers, ingressos ---------- */
+.row2.eq { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; }
+.ph-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem; margin-bottom: 1rem; }
+.ph-head .sec-lead { margin: 0; max-width: 62ch; }
+.ph-grid { columns: 4 220px; column-gap: 14px; margin-bottom: 1rem; }
+.ph { break-inside: avoid; margin: 0 0 14px; display: grid; gap: .4rem; }
+.ph-btn { position: relative; display: block; width: 100%; padding: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--strip); cursor: zoom-in; }
+.ph-btn img { display: block; width: 100%; height: auto; transition: transform .25s ease, opacity .2s; }
+.ph-btn:hover img, .ph-btn:focus-visible img { transform: scale(1.025); }
+.ph-btn:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
+.ph-broken { display: none; }
+.ph-btn.is-broken { aspect-ratio: 4 / 3; display: grid; place-items: center; cursor: default; }
+.ph-btn.is-broken img { display: none; }
+.ph-btn.is-broken .ph-broken { display: block; color: var(--faint); font-size: .85rem; }
+.ph figcaption { font-size: .86rem; line-height: 1.35; }
+.ph-cap { display: block; color: var(--paper); }
+.ph-meta { color: var(--muted); }
+.lb-stage.lb-photo { background: #050403; }
+.lb-cap { margin: 0 auto; max-width: 70ch; text-align: center; color: var(--paper); }
+.ph-rows { display: grid; gap: .8rem; }
+.ph-row { border: 1px solid var(--line); border-radius: 8px; padding: .7rem .8rem .8rem; margin: 0; background: var(--base); }
+.ph-row legend { padding: 0 .35rem; font-weight: 700; font-size: .9rem; }
+.ph-row-grid { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: .8rem; align-items: start; }
+.ph-prev { aspect-ratio: 3 / 4; border: 1px dashed var(--line); border-radius: 6px; overflow: hidden; display: grid; place-items: center; background: var(--strip); }
+.ph-prev img { width: 100%; height: 100%; object-fit: cover; }
+.ph-fields { display: grid; gap: .6rem; }
+.ph-fields > .btn { justify-self: start; }
+.ph-status { margin: -.25rem 0 0; min-height: 1.2em; color: var(--muted); }
+.ph-status.ok { color: var(--r-bem_avaliado); }
+.ph-status.error { color: var(--r-criticado); }
+.qphotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .6rem; margin: .4rem 0; }
+.qph { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: .55rem; align-items: start; padding: .4rem; border: 1px solid var(--line); border-radius: 6px; color: var(--paper); text-decoration: none; font-size: .82rem; }
+.qph img { width: 72px; height: 72px; object-fit: cover; border-radius: 4px; background: var(--strip); }
+@media (max-width: 720px) {
+  .row2.eq { grid-template-columns: minmax(0, 1fr); }
+  .ph-grid { columns: 2 140px; column-gap: 10px; }
+  .ph-row-grid { grid-template-columns: minmax(0, 1fr); }
+  .ph-prev { aspect-ratio: 16 / 9; max-height: 180px; }
+}
+@media (max-width: 720px) { .ph-prev:has(img[hidden]) { display: none; } }

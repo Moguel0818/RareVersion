@@ -959,7 +959,8 @@
         (L(p.caption) ? '<p class="lb-cap">' + esc(L(p.caption)) + '</p>' : '') +
         '<p class="lb-meta">' + [p.credit ? esc(t('ph_credit', { x: p.credit })) : '', p.added_by ? esc(t('ph_by', { x: p.added_by })) : ''].filter(Boolean).join(' · ') + '</p>' +
         '<div class="lb-actions">' + src + '<a class="btn small ghost" href="' + esc(p.url) + '" target="_blank" rel="noopener noreferrer">' + esc(t('ph_open')) + ICON.ext + '</a>' +
-          (A.isCurator() ? '<button type="button" class="btn small" data-action="avatar-edit" data-artist="' + esc(a.id) + '" data-url="' + esc(p.url) + '">' + esc(t('av_use')) + '</button>' : '') + '</div></div>';
+          (A.isCurator() ? '<button type="button" class="btn small" data-action="avatar-edit" data-mode="image" data-artist="' + esc(a.id) + '" data-url="' + esc(p.url) + '">' + esc(t('av_use')) + '</button>' +
+            '<button type="button" class="btn small" data-action="avatar-edit" data-mode="hero" data-artist="' + esc(a.id) + '" data-url="' + esc(p.url) + '">' + esc(t('av_use_bg')) + '</button>' : '') + '</div></div>';
   };
 
   V.artist = function (a) {
@@ -970,7 +971,7 @@
     const panel = tab === 'gravacoes' ? sessionsPanel(a) : tab === 'discografia' ? discoPanel(a) : tab === 'galeria' ? photosPanel(a) : songsPanel(a);
     const heroPhoto = a.hero ? { url: a.hero } : (a.photos.find((p) => p.kind === 'photo' && p.hero) || a.photos.find((p) => p.kind === 'photo'));
     return '<article class="film artist" style="' + artArt(a) + '">' +
-      '<header class="film-hero"><div class="hero-bg" aria-hidden="true">' + (heroPhoto ? '<img src="' + esc(heroPhoto.url) + '" alt="" decoding="async" referrerpolicy="no-referrer">' : '') + '</div>' +
+      '<header class="film-hero"><div class="hero-bg" aria-hidden="true">' + (heroPhoto ? '<img src="' + esc(heroPhoto.url) + '" alt="" decoding="async" referrerpolicy="no-referrer"' + (a.hero && a.hero_pos ? ' style="object-position:' + A.IMAGE_POS[a.hero_pos] + '"' : '') + '>' : '') + '</div>' +
         '<div class="film-hero-inner"><div class="film-side"><div class="film-poster disc-poster">' + artistAvatar(a, true) + '</div>' +
           (A.isCurator() ? '<button type="button" class="btn small ghost avatar-edit" data-action="avatar-edit" data-artist="' + esc(a.id) + '">' + esc(t('av_change')) + '</button>' : '') + '</div>' +
           '<div class="film-head"><p class="eyebrow"><a href="#musicas">' + esc(t('mu_title')) + '</a></p><h1>' + esc(a.name) + '</h1>' +
@@ -978,7 +979,8 @@
             (members ? '<p class="film-alt">' + esc(t('mu_members')) + ': ' + members + '</p>' : '') +
             (L(a.intro) ? '<p class="film-overview">' + esc(L(a.intro)) + '</p>' : '') +
             '<p class="film-counts">' + statLine(st).map((x) => '<span>' + esc(x) + '</span>').join('') + '</p>' +
-            '<div class="actions"><button class="btn ghost" type="button" data-action="suggest" data-kind="music" data-artist="' + esc(a.id) + '">' + esc(t('nav_suggest')) + '</button></div>' +
+            '<div class="actions"><button class="btn ghost" type="button" data-action="suggest" data-kind="music" data-artist="' + esc(a.id) + '">' + esc(t('nav_suggest')) + '</button>' +
+              (A.isCurator() ? '<button class="btn ghost bg-edit" type="button" data-action="avatar-edit" data-mode="hero" data-artist="' + esc(a.id) + '">' + esc(t('av_change_bg')) + '</button>' : '') + '</div>' +
           '</div></div></header>' +
       '<nav class="film-tabs" id="artist-tabs" aria-label="' + esc(t('atabs_label')) + '"><div class="film-tabs-inner" role="tablist">' +
         tabs.map((tb) => '<button type="button" role="tab" class="ftab' + (tb[0] === tab ? ' on' : '') + '" id="atab-' + tb[0] + '" aria-selected="' + (tb[0] === tab) + '" aria-controls="artist-panel" tabindex="' + (tb[0] === tab ? '0' : '-1') + '" data-action="artist-tab" data-artist="' + esc(a.id) + '" data-tab="' + tb[0] + '">' +

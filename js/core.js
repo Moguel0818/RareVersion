@@ -415,6 +415,7 @@
     a.image = AMR.safeUrl(a.image) && !AMR.isBlockedLink(a.image) ? a.image : '';
     a.hero = AMR.safeUrl(a.hero) && !AMR.isBlockedLink(a.hero) ? a.hero : '';
     a.image_pos = AMR.IMAGE_POS[a.image_pos] ? a.image_pos : '';
+    a.hero_pos = AMR.IMAGE_POS[a.hero_pos] ? a.hero_pos : '';
     a.songs.forEach((s) => {
       s.status = MSTATUS.indexOf(s.status) >= 0 ? s.status : 'released';
       s.versions = Array.isArray(s.versions) ? s.versions : [];
@@ -451,7 +452,7 @@
     }
     // Troca da foto principal / do fundo (a mais recente vale; texto vazio volta ao disco)
     if (d.set && typeof d.set === 'object') {
-      ['image', 'image_pos', 'hero'].forEach((k) => { if (k in d.set) a[k] = String(d.set[k] || ''); });
+      ['image', 'image_pos', 'hero', 'hero_pos'].forEach((k) => { if (k in d.set) a[k] = String(d.set[k] || ''); });
     }
     let s = null;
     const sid = d.song_id || (d.song && (d.song.id || AMR.slug(d.song.title || '')));

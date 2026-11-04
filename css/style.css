@@ -922,3 +922,28 @@ body.dock-tall .toasts { bottom: 300px; }
   .ph-prev { aspect-ratio: 16 / 9; max-height: 180px; }
 }
 @media (max-width: 720px) { .ph-prev:has(img[hidden]) { display: none; } }
+
+/* ---------- foto principal do artista (no lugar do disco) ---------- */
+.acard-img { position: absolute; inset: 4%; width: 92%; height: 92%; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 255, 255, .08); background: var(--strip); }
+.disc-poster { position: relative; }
+.avatar-edit { justify-self: center; white-space: nowrap; }
+.av-top { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 1rem; align-items: center; }
+.av-top p { margin: 0; }
+.av-prev { position: relative; width: 120px; }
+.av-prev .acard-disc { width: 120px; }
+.av-pick { border: 0; padding: 0; margin: 0; }
+.av-pick legend { font-size: .85rem; color: var(--muted); margin-bottom: .4rem; padding: 0; }
+.av-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: .5rem; }
+.av-thumb { padding: 0; aspect-ratio: 1; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: var(--strip); cursor: pointer; }
+.av-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.av-thumb.on { border-color: var(--lamp); box-shadow: 0 0 0 2px rgba(242, 178, 51, .35); }
+.av-pos { grid-template-columns: repeat(3, minmax(0, 1fr)); display: grid; }
+.av-pos legend { grid-column: 1 / -1; }
+label.check { display: flex; align-items: center; gap: .55rem; cursor: pointer; }
+.dlg-foot .av-reset { margin-right: auto; }
+.qset { display: flex; align-items: center; gap: .6rem; margin: .3rem 0; }
+.qset img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: var(--strip); }
+@media (max-width: 720px) {
+  .av-top { grid-template-columns: 88px minmax(0, 1fr); }
+  .av-prev, .av-prev .acard-disc { width: 88px; }
+}

@@ -400,6 +400,7 @@
   const MSTATUS = ['released', 'bside', 'unreleased'];
   AMR.MUSIC_TYPES = MTYPES;
   AMR.PHOTO_KINDS = ['photo', 'flyer', 'ticket', 'press', 'other'];
+  AMR.IMAGE_POS = { top: '50% 15%', center: '50% 50%', bottom: '50% 85%' };
   AMR.music = { artists: [], updated: MBASE.updated || '' };
   let artistIndex = {};
 
@@ -410,6 +411,10 @@
     a.links = a.links && typeof a.links === 'object' ? a.links : {};
     a.photos = (Array.isArray(a.photos) ? a.photos : []).filter((p) => p && AMR.safeUrl(p.url) && !AMR.isBlockedLink(p.url));
     a.photos.forEach((p) => { p.kind = AMR.PHOTO_KINDS.indexOf(p.kind) >= 0 ? p.kind : 'photo'; });
+    // Foto principal (no lugar do disco) e fundo escolhidos pela moderação
+    a.image = AMR.safeUrl(a.image) && !AMR.isBlockedLink(a.image) ? a.image : '';
+    a.hero = AMR.safeUrl(a.hero) && !AMR.isBlockedLink(a.hero) ? a.hero : '';
+    a.image_pos = AMR.IMAGE_POS[a.image_pos] ? a.image_pos : '';
     a.songs.forEach((s) => {
       s.status = MSTATUS.indexOf(s.status) >= 0 ? s.status : 'released';
       s.versions = Array.isArray(s.versions) ? s.versions : [];
@@ -443,6 +448,10 @@
         if (!p || typeof p !== 'object' || a.photos.some((q) => q.url === p.url)) return;
         a.photos.push(Object.assign({ community: true }, AMR.clone(p), { id: p.id || 'c-' + item.id + '-' + i }));
       });
+    }
+    // Troca da foto principal / do fundo (a mais recente vale; texto vazio volta ao disco)
+    if (d.set && typeof d.set === 'object') {
+      ['image', 'image_pos', 'hero'].forEach((k) => { if (k in d.set) a[k] = String(d.set[k] || ''); });
     }
     let s = null;
     const sid = d.song_id || (d.song && (d.song.id || AMR.slug(d.song.title || '')));

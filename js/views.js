@@ -759,9 +759,16 @@
     return [A.plural(st.songs, 'mu_one_song', 'mu_n_songs'), A.plural(st.rare, 'mu_one_rare', 'mu_n_rare'),
       st.unrel ? A.plural(st.unrel, 'mu_one_unrel', 'mu_n_unrel') : '', st.sessions ? A.plural(st.sessions, 'mu_one_session', 'mu_n_sessions') : ''].filter(Boolean);
   }
+  // Foto principal do artista (ou o disco com a inicial, se não houver ou se a imagem falhar)
+  function artistAvatar(a, big) {
+    const label = '<span class="acard-label">' + esc(a.name.replace(/^[’']/, '').charAt(0)) + '</span>';
+    const img = a.image ? '<img class="acard-img" src="' + esc(a.image) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" style="object-position:' + (A.IMAGE_POS[a.image_pos] || A.IMAGE_POS.center) + '">' : '';
+    return '<span class="acard-disc' + (big ? ' big' : '') + (img ? ' has-img' : '') + '" aria-hidden="true">' + label + img + '</span>';
+  }
+  V.artistAvatar = artistAvatar;
   function artistCard(a) {
     return '<a class="acard" href="' + esc(artistHref(a)) + '" style="' + artArt(a) + '">' +
-      '<span class="acard-disc" aria-hidden="true"><span class="acard-label">' + esc(a.name.replace(/^[’']/, '').charAt(0)) + '</span></span>' +
+      artistAvatar(a) +
       '<span class="acard-body"><span class="acard-name">' + esc(a.name) + '</span>' +
         '<span class="acard-meta">' + esc([a.years, L(a.origin)].filter(Boolean).join(' · ')) + '</span>' +
         '<span class="acard-counts">' + statLine(artistStats(a)).map((x) => '<span>' + esc(x) + '</span>').join('') + '</span></span></a>';
@@ -951,7 +958,8 @@
         '<button type="button" class="icon-btn" data-action="gal-step" data-dir="1" aria-label="' + esc(t('next')) + '"' + (i >= list.length - 1 ? ' disabled' : '') + '>' + ICON.right + '</button></div>' +
         (L(p.caption) ? '<p class="lb-cap">' + esc(L(p.caption)) + '</p>' : '') +
         '<p class="lb-meta">' + [p.credit ? esc(t('ph_credit', { x: p.credit })) : '', p.added_by ? esc(t('ph_by', { x: p.added_by })) : ''].filter(Boolean).join(' · ') + '</p>' +
-        '<div class="lb-actions">' + src + '<a class="btn small ghost" href="' + esc(p.url) + '" target="_blank" rel="noopener noreferrer">' + esc(t('ph_open')) + ICON.ext + '</a></div></div>';
+        '<div class="lb-actions">' + src + '<a class="btn small ghost" href="' + esc(p.url) + '" target="_blank" rel="noopener noreferrer">' + esc(t('ph_open')) + ICON.ext + '</a>' +
+          (A.isCurator() ? '<button type="button" class="btn small" data-action="avatar-edit" data-artist="' + esc(a.id) + '" data-url="' + esc(p.url) + '">' + esc(t('av_use')) + '</button>' : '') + '</div></div>';
   };
 
   V.artist = function (a) {
@@ -960,10 +968,11 @@
     const members = a.members.map((m) => esc(m.name) + (L(m.role) ? ' <span class="muted">(' + esc(L(m.role)) + ')</span>' : '')).join(' · ');
     const tabs = [['musicas', 'atab_songs', a.songs.length], ['gravacoes', 'atab_sessions', a.sessions.length], ['galeria', 'atab_gallery', a.photos.length], ['discografia', 'atab_disco', 0]];
     const panel = tab === 'gravacoes' ? sessionsPanel(a) : tab === 'discografia' ? discoPanel(a) : tab === 'galeria' ? photosPanel(a) : songsPanel(a);
-    const heroPhoto = a.photos.find((p) => p.kind === 'photo' && p.hero) || a.photos.find((p) => p.kind === 'photo');
+    const heroPhoto = a.hero ? { url: a.hero } : (a.photos.find((p) => p.kind === 'photo' && p.hero) || a.photos.find((p) => p.kind === 'photo'));
     return '<article class="film artist" style="' + artArt(a) + '">' +
       '<header class="film-hero"><div class="hero-bg" aria-hidden="true">' + (heroPhoto ? '<img src="' + esc(heroPhoto.url) + '" alt="" decoding="async" referrerpolicy="no-referrer">' : '') + '</div>' +
-        '<div class="film-hero-inner"><div class="film-side"><div class="film-poster disc-poster"><span class="acard-disc big" aria-hidden="true"><span class="acard-label">' + esc(a.name.replace(/^[’']/, '').charAt(0)) + '</span></span></div></div>' +
+        '<div class="film-hero-inner"><div class="film-side"><div class="film-poster disc-poster">' + artistAvatar(a, true) + '</div>' +
+          (A.isCurator() ? '<button type="button" class="btn small ghost avatar-edit" data-action="avatar-edit" data-artist="' + esc(a.id) + '">' + esc(t('av_change')) + '</button>' : '') + '</div>' +
           '<div class="film-head"><p class="eyebrow"><a href="#musicas">' + esc(t('mu_title')) + '</a></p><h1>' + esc(a.name) + '</h1>' +
             '<p class="meta">' + [a.years, L(a.origin)].filter(Boolean).map((x) => '<span>' + esc(x) + '</span>').join('') + '</p>' +
             (members ? '<p class="film-alt">' + esc(t('mu_members')) + ': ' + members + '</p>' : '') +

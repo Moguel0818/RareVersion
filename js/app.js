@@ -187,6 +187,74 @@
     }
   }
 
+  /* foto principal do artista (só para quem abriu a Moderação) */
+  function openAvatar(artistId, url) {
+    const a = A.artist(artistId);
+    if (!a) return;
+    closeDialog(document.getElementById('dlg-image'));
+    const cur = url || a.image || '';
+    const pos = a.image_pos || 'center';
+    const pics = a.photos.filter((p) => p.kind === 'photo' || p.kind === 'press' || p.kind === 'other' || p.url === cur);
+    $('#av-body').innerHTML =
+      '<input type="hidden" name="avartist" value="' + esc(a.id) + '">' +
+      '<div class="av-top"><div class="av-prev">' + V.artistAvatar(Object.assign({}, a, { image: '' }), true) + '<img class="acard-img" alt="" referrerpolicy="no-referrer" data-keep="1" hidden></div>' +
+        '<p class="muted">' + esc(t('av_lead')) + '</p></div>' +
+      '<fieldset class="av-pick"><legend>' + esc(t('av_from_gallery')) + '</legend>' +
+        (pics.length ? '<div class="av-grid">' + pics.map((p) => '<button type="button" class="av-thumb' + (p.url === cur ? ' on' : '') + '" aria-pressed="' + (p.url === cur) + '" data-action="av-pick" data-url="' + esc(p.url) + '" aria-label="' + esc(L(p.caption) || t('pk1_' + p.kind)) + '"><img src="' + esc(p.url) + '" alt="" loading="lazy" referrerpolicy="no-referrer" data-keep="1"></button>').join('') + '</div>'
+          : '<p class="small muted">' + esc(t('av_none_gallery')) + '</p>') + '</fieldset>' +
+      '<label><span>' + esc(t('av_url')) + '</span><input name="avurl" type="url" maxlength="500" placeholder="https://" value="' + esc(cur) + '" autocomplete="off" spellcheck="false"></label>' +
+      '<fieldset class="kind av-pos"><legend>' + esc(t('av_pos')) + '</legend>' +
+        ['top', 'center', 'bottom'].map((k) => '<label><input type="radio" name="avpos" value="' + k + '"' + (k === pos ? ' checked' : '') + '> ' + esc(t('av_pos_' + k)) + '</label>').join('') + '</fieldset>' +
+      '<label class="check"><input type="checkbox" name="avhero"' + (a.hero && a.hero === a.image ? ' checked' : '') + '> ' + esc(t('av_hero')) + '</label>' +
+      '<p class="form-msg" role="status" aria-live="polite"></p>';
+    $('#dlg-avatar .av-reset').hidden = !a.image;
+    openDialog('dlg-avatar');
+    avatarPreview();
+  }
+  function avatarPreview() {
+    const form = $('#dlg-avatar form');
+    if (!form) return;
+    const img = form.querySelector('.av-prev > img');
+    const url = A.safeUrl(String(form.elements.avurl.value || '').trim());
+    const pos = (form.querySelector('input[name="avpos"]:checked') || {}).value || 'center';
+    form.querySelectorAll('.av-thumb').forEach((b) => { const on = b.dataset.url === url; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+    if (!url) { img.hidden = true; img.removeAttribute('src'); return; }
+    img.style.objectPosition = A.IMAGE_POS[pos];
+    img.onload = () => { img.hidden = false; };
+    img.onerror = () => { img.hidden = true; const m = form.querySelector('.form-msg'); m.textContent = t('ph_bad'); m.className = 'form-msg error'; };
+    if (img.getAttribute('src') !== url) img.src = url;
+  }
+  async function saveAvatar(form, reset) {
+    const msg = form.querySelector('.form-msg');
+    const setMsg = (x, c) => { msg.textContent = x; msg.className = 'form-msg' + (c ? ' ' + c : ''); };
+    const a = A.artist(form.elements.avartist.value);
+    if (!a) return;
+    const url = A.safeUrl(String(form.elements.avurl.value || '').trim());
+    if (!reset && (!url || A.isBlockedLink(url))) { setMsg(t('av_err_url'), 'error'); return; }
+    const key = A.session.get('amr.admin.key', '');
+    if (A.backend.mode() !== 'demo' && !key) { setMsg(t('av_err_key'), 'error'); return; }
+    const pos = (form.querySelector('input[name="avpos"]:checked') || {}).value || 'center';
+    const set = reset ? { image: '', image_pos: '' } : { image: url, image_pos: pos };
+    if (reset) { if (a.hero && a.hero === a.image) set.hero = ''; }
+    else if (form.elements.avhero.checked) set.hero = url;
+    else if (a.hero && a.hero === a.image) set.hero = '';
+    const btns = form.querySelectorAll('button');
+    btns.forEach((b) => { b.disabled = true; });
+    try {
+      const r = await A.backend.adminAdd(key, { tipo: 'music', film_id: '', titulo: t('av_item', { x: a.name }), dados: { artist_id: a.id, set } });
+      if (r && r.ok === false) throw new Error(r.error || 'erro');
+      try { A.approved = await A.backend.approved(); } catch (e) { (A.approved = A.approved || []).push({ id: A.uid('l'), tipo: 'music', dados: { artist_id: a.id, set } }); }
+      A.rebuild();
+      A.rerender();
+      closeDialog(form.closest('dialog'));
+      A.toast(t(reset ? 'av_reset_done' : 'av_saved'));
+    } catch (e) {
+      setMsg(String(e && e.message).indexOf('nao_autorizado') >= 0 ? t('av_err_key') : t('av_err_save'), 'error');
+    } finally {
+      btns.forEach((b) => { b.disabled = false; });
+    }
+  }
+
   function dialogs() {
     return '<dialog id="dlg-suggest" class="dlg" aria-labelledby="sg-h">' +
       '<form class="sg-form" data-form="suggest" novalidate>' +
@@ -264,6 +332,14 @@
         '<div class="dlg-foot"><button type="button" class="btn ghost" data-action="close-dialog">' + esc(t('close')) + '</button></div>' +
       '</form></dialog>' +
       photoDialog() +
+      '<dialog id="dlg-avatar" class="dlg" aria-labelledby="av-h"><form class="sg-form" data-form="avatar" novalidate>' +
+        '<div class="dlg-head"><h2 id="av-h">' + esc(t('av_title')) + '</h2>' +
+          '<button type="button" class="icon-btn" data-action="close-dialog" aria-label="' + esc(t('close')) + '">&times;</button></div>' +
+        '<div class="dlg-body" id="av-body"></div>' +
+        '<div class="dlg-foot"><button type="button" class="btn ghost av-reset" data-action="av-reset">' + esc(t('av_reset')) + '</button>' +
+          '<button type="button" class="btn ghost" data-action="close-dialog">' + esc(t('cancel')) + '</button>' +
+          '<button type="submit" class="btn primary">' + esc(t('av_save')) + '</button></div>' +
+      '</form></dialog>' +
       '<dialog id="dlg-image" class="dlg lightbox" aria-labelledby="lb-h">' +
         '<div class="dlg-head"><h2 id="lb-h" class="sr-only">' + esc(t('gl_title')) + '</h2>' +
           '<button type="button" class="icon-btn" data-action="close-dialog" aria-label="' + esc(t('close')) + '">&times;</button></div>' +
@@ -825,6 +901,19 @@
         if (f) { A.gallery.reset(); maybeLoadGallery(); A.rerender(); }
         break;
       }
+      case 'avatar-edit':
+        openAvatar(el.dataset.artist, el.dataset.url || '');
+        break;
+      case 'av-pick': {
+        const f = el.closest('form');
+        f.elements.avurl.value = el.dataset.url;
+        f.querySelector('.form-msg').textContent = '';
+        avatarPreview();
+        break;
+      }
+      case 'av-reset':
+        saveAvatar(el.closest('form'), true);
+        break;
       case 'photo-kind':
         A.state.photoKind[el.dataset.artist] = el.dataset.kind;
         A.rerender();
@@ -980,6 +1069,8 @@
       if (sel) sel.focus({ preventScroll: true });
     } else if (el.name === 'partist' && el.closest('form[data-form="photo"]')) {
       syncPhotoArtist(el.closest('form'));
+    } else if (el.name === 'avpos' || el.name === 'avurl') {
+      avatarPreview();
     } else if (el.name === 'purl') {
       previewPhoto(el);
     } else if (el.name === 'kind' && el.closest('form[data-form="suggest"]')) {
@@ -995,11 +1086,13 @@
     if (name === 'suggest') submitSuggest(form);
     else if (name === 'settings') saveSettings(form);
     else if (name === 'photo') submitPhoto(form);
+    else if (name === 'avatar') saveAvatar(form, false);
     else if (A.adminSubmit) A.adminSubmit(name, form);
   }
 
   function onInput(e) {
     if (e.target.id === 'st-key') { settingsMsg(''); return; }
+    if (e.target.name === 'avurl') { const f = e.target.closest('form'); f.querySelector('.form-msg').textContent = ''; clearTimeout(photoTimer); photoTimer = setTimeout(avatarPreview, 400); return; }
     if (e.target.name === 'purl') { clearTimeout(photoTimer); const el = e.target; photoTimer = setTimeout(() => previewPhoto(el), 450); return; }
     if (e.target.id !== 'q') return;
     const q = e.target.value;

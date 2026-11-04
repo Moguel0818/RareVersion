@@ -81,6 +81,10 @@
       const what = (so && so.title) || (d.song && d.song.title) || '';
       parts.push('<p><strong>' + esc(who) + (what ? ' — ' + esc(what) : '') + '</strong>' + (d.song && !so ? ' <span class="chip ms-unreleased">' + esc(t('ms_unreleased')) + '</span>' : '') + '</p>');
       if (d.version) parts.push('<p class="badges">' + V.mtBadge(d.version.type || 'live') + (d.version.date ? '<span class="chip">' + esc(A.fmtDate(d.version.date)) + '</span>' : '') + (L(d.version.title) ? '<span class="chip">' + esc(L(d.version.title)) + '</span>' : '') + '</p>' + (L(d.version.summary) ? '<p>' + esc(L(d.version.summary)) + '</p>' : ''));
+      if (d.set && typeof d.set === 'object') {
+        parts.push('<p class="qset">' + (d.set.image ? '<img src="' + esc(A.safeUrl(d.set.image)) + '" alt="" referrerpolicy="no-referrer" data-keep="1">' : '') +
+          '<span>' + esc(d.set.image ? t('av_title') : t('av_reset')) + (d.set.hero ? ' · ' + esc(t('av_hero')) : '') + '</span></p>');
+      }
       if (Array.isArray(d.photos) && d.photos.length) {
         parts.push('<div class="qphotos">' + d.photos.map((p) => '<a class="qph" href="' + esc(A.safeUrl(p.url) || '#') + '" target="_blank" rel="noopener noreferrer"><img src="' + esc(A.safeUrl(p.url) || '') + '" alt="" loading="lazy" referrerpolicy="no-referrer" data-keep="1">' +
           '<span><strong>' + esc(t('pk1_' + (p.kind || 'photo'))) + '</strong>' + (p.date ? ' · ' + esc(p.date) : '') + (L(p.caption) ? '<br>' + esc(L(p.caption)) : '') +
@@ -324,6 +328,7 @@
       (o.sessions || []).forEach((x) => { delete x.community; mark(x); });
       (o.photos || []).forEach((p) => { delete p.community; });
       if (o.photos && !o.photos.length) delete o.photos;
+      ['image', 'image_pos', 'hero'].forEach((k) => { if (!o[k]) delete o[k]; });
       (o.songs || []).forEach((so) => { delete so.community; mark(so); (so.versions || []).forEach((v) => { delete v.community; mark(v); }); });
       return o;
     });
